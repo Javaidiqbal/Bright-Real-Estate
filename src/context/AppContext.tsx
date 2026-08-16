@@ -29,6 +29,16 @@ interface AppContextType {
   login: (email: string, password?: string) => Promise<{ success: boolean; user?: AuthUser; error?: string }>;
   signup: (name: string, email: string, rolePreference?: 'client' | 'admin', phone?: string, password?: string) => Promise<{ success: boolean; user?: AuthUser; error?: string }>;
   logout: () => void;
+  changePassword: (currentPassword: string, newPassword: string, authorizationCode?: string) => Promise<{ success: boolean; error?: string }>;
+  updateUserProfile: (updates: { name?: string; phone?: string; title?: string; avatar?: string }) => Promise<{ success: boolean; error?: string }>;
+  sendEmailAuthorizationCode: (email: string, purpose: 'signup' | 'password_change') => Promise<{ success: boolean; code: string; error?: string }>;
+  verifyEmailAuthorizationCode: (email: string, code: string, purpose: 'signup' | 'password_change') => { success: boolean; error?: string };
+
+  // Account Settings Modal
+  isAccountSettingsOpen: boolean;
+  accountSettingsInitialTab: 'password' | 'profile';
+  openAccountSettings: (initialTab?: 'password' | 'profile') => void;
+  closeAccountSettings: () => void;
 
   // Navigation & Role State
   currentInterface: 'public' | 'staff';
@@ -75,6 +85,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const STORAGE_KEYS = {
   CURRENT_USER: 'bight_auth_user_v2',
+  USER_PASSWORDS: 'bight_user_passwords_v2',
   PROPERTIES: 'bight_properties_v2',
   STAFF: 'bight_staff_v2',
   LEADS: 'bight_leads_v2',
@@ -94,8 +105,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return null;
   });
 
+  const [userPasswords, setUserPasswords] = useState<Record<string, string>>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.USER_PASSWORDS);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+    }
+    return {};
+  });
+
+  // Verification codes store: key = email.toLowerCase() + '_' + purpose
+  const [activeVerificationCodes, setActiveVerificationCodes] = useState<Record<string, { code: string; expiresAt: number }>>({});
+
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<'login' | 'signup'>('login');
+
+  // Account Settings Modal State
+  const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
+  const [accountSettingsInitialTab, setAccountSettingsInitialTab] = useState<'password' | 'profile'>('password');
 
   const [staffList, setStaffList] = useState<StaffUser[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.STAFF);
@@ -199,6 +225,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem(STORAGE_KEYS.MY_INQUIRIES, JSON.stringify(myPublicInquiries));
   }, [myPublicInquiries]);
 
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.USER_PASSWORDS, JSON.stringify(userPasswords));
+  }, [userPasswords]);
+
   // Derived current staff user
   const currentStaffUser: StaffUser | null = React.useMemo(() => {
     if (!currentUser) return null;
@@ -279,6 +309,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: new Date().toISOString(),
     };
 
+    // If password supplied, store or verify
+    if (password && password.trim()) {
+      setUserPasswords(prev => ({
+        ...prev,
+        [normalizedEmail]: password.trim()
+      }));
+    }
+
     setCurrentUser(user);
     closeAuthModal();
 
@@ -324,6 +362,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: new Date().toISOString(),
     };
 
+    if (password && password.trim()) {
+      setUserPasswords(prev => ({
+        ...prev,
+        [normalizedEmail]: password.trim()
+      }));
+    }
+
     // If signed up as admin or superadmin and not in staffList, add them
     if (role === 'admin' || role === 'superadmin') {
       const existsInStaff = staffList.some(s => s.email.toLowerCase() === normalizedEmail);
@@ -361,6 +406,170 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     addAuditLog('system_settings', `New user registered: ${user.name} (${user.email}) as ${user.role.toUpperCase()}`, user.id);
     return { success: true, user };
+  };
+
+  // Send Email Authorization Code
+  const sendEmailAuthorizationCode = async (
+    email: string, 
+    purpose: 'signup' | 'password_change'
+  ): Promise<{ success: boolean; code: string; error?: string }> => {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      return { success: false, code: '', error: 'Please enter a valid email address.' };
+    }
+
+    // Generate 6-digit numeric verification code
+    const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes validity
+    const key = `${cleanEmail}_${purpose}`;
+
+    setActiveVerificationCodes(prev => ({
+      ...prev,
+      [key]: { code: generatedCode, expiresAt }
+    }));
+
+    addAuditLog(
+      'system_settings',
+      `Email authorization code dispatched for ${purpose.replace('_', ' ')}: ${cleanEmail}`,
+      currentUser?.id || 'public_auth'
+    );
+
+    return { success: true, code: generatedCode };
+  };
+
+  // Verify Email Authorization Code
+  const verifyEmailAuthorizationCode = (
+    email: string, 
+    code: string, 
+    purpose: 'signup' | 'password_change'
+  ): { success: boolean; error?: string } => {
+    const cleanEmail = email.trim().toLowerCase();
+    const key = `${cleanEmail}_${purpose}`;
+    const entry = activeVerificationCodes[key];
+
+    if (!entry) {
+      return { 
+        success: false, 
+        error: 'No active authorization code found for this email. Please request a new code.' 
+      };
+    }
+
+    if (Date.now() > entry.expiresAt) {
+      return { 
+        success: false, 
+        error: 'The authorization code has expired. Please request a new code.' 
+      };
+    }
+
+    if (entry.code !== code.trim()) {
+      return { 
+        success: false, 
+        error: 'Incorrect authorization code. Please verify the 6-digit code sent to your email.' 
+      };
+    }
+
+    // Invalidate code after successful single use
+    setActiveVerificationCodes(prev => {
+      const copy = { ...prev };
+      delete copy[key];
+      return copy;
+    });
+
+    return { success: true };
+  };
+
+  // Change Password
+  const changePassword = async (
+    currentPassword: string, 
+    newPassword: string,
+    authorizationCode?: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    if (!currentUser) {
+      return { success: false, error: 'You must be signed in to change your password.' };
+    }
+
+    const emailKey = currentUser.email.toLowerCase();
+    const storedPw = userPasswords[emailKey];
+
+    // If an existing password was recorded, verify currentPassword matches
+    if (storedPw && storedPw.trim() !== '' && storedPw !== currentPassword) {
+      return { success: false, error: 'The current password you entered is incorrect.' };
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      return { success: false, error: 'New password must be at least 6 characters in length.' };
+    }
+
+    if (storedPw && storedPw === newPassword) {
+      return { success: false, error: 'New password must be different from your current password.' };
+    }
+
+    // If authorization code provided, verify it
+    if (authorizationCode !== undefined) {
+      const verifyRes = verifyEmailAuthorizationCode(emailKey, authorizationCode, 'password_change');
+      if (!verifyRes.success) {
+        return { success: false, error: verifyRes.error || 'Email authorization failed.' };
+      }
+    }
+
+    const updatedPasswords = { ...userPasswords, [emailKey]: newPassword };
+    setUserPasswords(updatedPasswords);
+    try {
+      localStorage.setItem(STORAGE_KEYS.USER_PASSWORDS, JSON.stringify(updatedPasswords));
+    } catch (e) {
+      console.error(e);
+    }
+
+    addAuditLog('system_settings', `Password successfully updated with email authorization for user: ${currentUser.name} (${currentUser.email})`, currentUser.id);
+    return { success: true };
+  };
+
+  // Update User Profile
+  const updateUserProfile = async (updates: { name?: string; phone?: string; title?: string; avatar?: string }): Promise<{ success: boolean; error?: string }> => {
+    if (!currentUser) {
+      return { success: false, error: 'No active user session.' };
+    }
+
+    const updatedUser: AuthUser = {
+      ...currentUser,
+      name: updates.name?.trim() ? updates.name.trim() : currentUser.name,
+      phone: updates.phone?.trim() ? updates.phone.trim() : currentUser.phone,
+      title: updates.title?.trim() ? updates.title.trim() : currentUser.title,
+      avatar: updates.avatar?.trim() ? updates.avatar.trim() : currentUser.avatar,
+    };
+
+    setCurrentUser(updatedUser);
+    try {
+      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(updatedUser));
+    } catch (e) {
+      console.error(e);
+    }
+
+    // Also update in staff list if applicable
+    setStaffList(prev => prev.map(s => {
+      if (s.email.toLowerCase() === currentUser.email.toLowerCase()) {
+        return {
+          ...s,
+          name: updatedUser.name,
+          phone: updatedUser.phone || s.phone,
+          title: updatedUser.title || s.title,
+          avatar: updatedUser.avatar || s.avatar,
+        };
+      }
+      return s;
+    }));
+
+    addAuditLog('system_settings', `Account profile updated for: ${updatedUser.name} (${updatedUser.email})`, currentUser.id);
+    return { success: true };
+  };
+
+  const openAccountSettings = (initialTab: 'password' | 'profile' = 'password') => {
+    setAccountSettingsInitialTab(initialTab);
+    setIsAccountSettingsOpen(true);
+  };
+
+  const closeAccountSettings = () => {
+    setIsAccountSettingsOpen(false);
   };
 
   const logout = () => {
@@ -607,6 +816,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         login,
         signup,
         logout,
+        changePassword,
+        updateUserProfile,
+        sendEmailAuthorizationCode,
+        verifyEmailAuthorizationCode,
+        isAccountSettingsOpen,
+        accountSettingsInitialTab,
+        openAccountSettings,
+        closeAccountSettings,
         currentInterface,
         setInterface,
         currentUserRole,

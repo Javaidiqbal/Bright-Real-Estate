@@ -12,7 +12,9 @@ import {
   Lock, 
   Globe, 
   LogOut,
-  Crown
+  Crown,
+  KeyRound,
+  Settings
 } from 'lucide-react';
 
 export const StaffSidebar: React.FC = () => {
@@ -23,7 +25,8 @@ export const StaffSidebar: React.FC = () => {
     setActiveStaffTab,
     setInterface,
     logout,
-    leads
+    leads,
+    openAccountSettings
   } = useApp();
 
   const isSuperadmin = currentUser?.role === 'superadmin' || currentUser?.email.toLowerCase() === SUPERADMIN_EMAIL.toLowerCase();
@@ -125,29 +128,48 @@ export const StaffSidebar: React.FC = () => {
       {/* Bottom Profile & Public Switcher */}
       <div className="p-3 border-t border-slate-800 space-y-2 bg-slate-950/60">
         
-        {/* Active Staff User Card */}
+        {/* Active Staff User Card with Settings Button */}
         {currentUser && (
-          <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/60 flex items-center gap-2.5">
-            <img
-              src={currentUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'}
-              alt={currentUser.name}
-              className="w-8 h-8 rounded-full object-cover border border-slate-600 shrink-0"
-            />
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-200 truncate">
-                  {currentUser.name}
-                </span>
-                <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
-                  isSuperadmin ? 'bg-purple-900 text-purple-300 border border-purple-700/60' : 'bg-indigo-900 text-indigo-300 border border-indigo-700/60'
-                }`}>
-                  {isSuperadmin ? 'Superadmin' : 'Admin'}
-                </span>
+          <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <img
+                src={currentUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'}
+                alt={currentUser.name}
+                className="w-8 h-8 rounded-full object-cover border border-slate-600 shrink-0"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-slate-200 truncate">
+                    {currentUser.name}
+                  </span>
+                  <span className={`text-[8px] px-1 py-0.2 rounded font-bold uppercase shrink-0 ${
+                    isSuperadmin ? 'bg-purple-900 text-purple-300 border border-purple-700/60' : 'bg-indigo-900 text-indigo-300 border border-indigo-700/60'
+                  }`}>
+                    {isSuperadmin ? 'Super' : 'Admin'}
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-400 truncate font-mono">{currentUser.email}</p>
               </div>
-              <p className="text-[10px] text-slate-400 truncate font-mono">{currentUser.email}</p>
             </div>
+
+            <button
+              onClick={() => openAccountSettings('password')}
+              title="Change Password & Account Settings"
+              className="p-1.5 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-slate-400 hover:text-amber-400 border border-slate-600 transition-colors shrink-0 cursor-pointer"
+            >
+              <KeyRound className="w-3.5 h-3.5" />
+            </button>
           </div>
         )}
+
+        {/* Change Password & Security Action */}
+        <button
+          onClick={() => openAccountSettings('password')}
+          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-slate-800/60 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold transition-colors cursor-pointer border border-slate-700/40"
+        >
+          <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+          <span>Security & Password</span>
+        </button>
 
         {/* View Public Marketplace */}
         <button

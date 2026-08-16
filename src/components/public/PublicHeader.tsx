@@ -13,7 +13,9 @@ import {
   User,
   Crown,
   ChevronDown,
-  LayoutDashboard
+  LayoutDashboard,
+  KeyRound,
+  Settings
 } from 'lucide-react';
 
 interface PublicHeaderProps {
@@ -36,7 +38,8 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
     isAuthenticated, 
     openAuthModal, 
     logout, 
-    setInterface 
+    setInterface,
+    openAccountSettings
   } = useApp();
 
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -210,6 +213,28 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
                       >
                         <Heart className="w-4 h-4 text-rose-500" />
                         <span>Saved Properties ({favorites.length})</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          openAccountSettings('password');
+                          setIsUserMenuOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded-xl transition-colors text-left cursor-pointer"
+                      >
+                        <KeyRound className="w-4 h-4 text-amber-500" />
+                        <span>Change Password</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          openAccountSettings('profile');
+                          setIsUserMenuOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded-xl transition-colors text-left cursor-pointer"
+                      >
+                        <Settings className="w-4 h-4 text-slate-500" />
+                        <span>Account Settings</span>
                       </button>
                     </div>
 

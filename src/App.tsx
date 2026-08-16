@@ -4,6 +4,7 @@ import { PublicPortal } from './components/public/PublicPortal';
 import { StaffPortal } from './components/staff/StaffPortal';
 import { PropertyDetailModal } from './components/public/PropertyDetailModal';
 import { AuthModal } from './components/auth/AuthModal';
+import { AccountSettingsModal } from './components/account/AccountSettingsModal';
 
 const AppContent: React.FC = () => {
   const { currentInterface, selectedPropertyForDetail, setSelectedPropertyForDetail } = useApp();
@@ -30,6 +31,9 @@ const AppContent: React.FC = () => {
 
       {/* Global Login / Sign Up Authentication Modal */}
       <AuthModal />
+
+      {/* Global Account & Password Settings Modal */}
+      <AccountSettingsModal />
 
     </div>
   );

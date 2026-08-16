@@ -15,7 +15,9 @@ import {
   Plus, 
   Globe, 
   LogOut,
-  Bell
+  Bell,
+  KeyRound,
+  Settings
 } from 'lucide-react';
 
 export const StaffPortal: React.FC = () => {
@@ -24,7 +26,8 @@ export const StaffPortal: React.FC = () => {
     activeStaffTab, 
     setInterface, 
     logout,
-    leads 
+    leads,
+    openAccountSettings
   } = useApp();
 
   const [isCreatingNewListing, setIsCreatingNewListing] = useState(false);
@@ -80,6 +83,16 @@ export const StaffPortal: React.FC = () => {
             >
               <Globe className="w-3.5 h-3.5 text-amber-500" />
               <span className="hidden md:inline">Public Site</span>
+            </button>
+
+            {/* Account Settings / Password */}
+            <button
+              onClick={() => openAccountSettings('password')}
+              className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-950 px-3 py-2 rounded-xl hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
+              title="Change Password & Account Settings"
+            >
+              <KeyRound className="w-3.5 h-3.5 text-amber-500" />
+              <span className="hidden lg:inline">Security</span>
             </button>
 
             {/* Logout Button */}
