@@ -71,7 +71,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
         {/* Top Badges */}
         <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 z-10">
           <span className="px-2.5 py-1 rounded-md bg-slate-950/85 backdrop-blur-md text-amber-400 text-[11px] font-bold uppercase tracking-wider shadow-sm">
-            {property.listingType === 'for_sale' ? 'For Sale' : 'For Lease'}
+            {property.listingType === 'for_sale' ? 'For Sale' : 'For Rent'}
           </span>
           {property.featured && (
             <span className="px-2.5 py-1 rounded-md bg-amber-500 text-slate-950 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-sm">

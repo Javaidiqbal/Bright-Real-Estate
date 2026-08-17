@@ -41,10 +41,12 @@ export const StaffSidebar: React.FC = () => {
       icon: Users,
       badge: newLeadsCount > 0 ? newLeadsCount : undefined
     },
+    { id: 'customers', label: 'Customers & Clients', icon: Users },
     { id: 'calendar', label: 'Tour Appointments', icon: Calendar },
     { id: 'analytics', label: 'Market Analytics', icon: BarChart3 },
     // Superadmin Exclusive Tabs (governed by ijavaid91@gmail.com)
     ...(isSuperadmin ? [
+      { id: 'website_editor', label: 'Website Copy Editor', icon: Globe, superadminOnly: true },
       { id: 'team', label: 'Staff & Roles (RBAC)', icon: ShieldCheck, superadminOnly: true },
       { id: 'audit', label: 'System Audit Logs', icon: FileText, superadminOnly: true },
     ] : []),

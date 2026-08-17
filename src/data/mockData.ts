@@ -1,4 +1,4 @@
-import { Property, StaffUser, LeadInquiry, AuditLog } from '../types';
+import { Property, StaffUser, CustomerUser, LeadInquiry, AuditLog } from '../types';
 
 export const INITIAL_STAFF: StaffUser[] = [
   {
@@ -23,7 +23,7 @@ export const INITIAL_STAFF: StaffUser[] = [
     email: 'marcus.chen@bightrealestate.com',
     role: 'admin',
     title: 'Senior Luxury Portfolio Partner',
-    phone: '(415) 723-9944',
+    phone: '+92 300 5550182',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
     licenseNumber: 'CA-DRE #02081194',
     commissionRate: 2.5,
@@ -39,7 +39,7 @@ export const INITIAL_STAFF: StaffUser[] = [
     email: 'sarah.jenkins@bightrealestate.com',
     role: 'admin',
     title: 'Executive Residential Advisor',
-    phone: '(415) 602-8812',
+    phone: '+92 321 4455667',
     avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=400&q=80',
     licenseNumber: 'CA-DRE #02144930',
     commissionRate: 2.5,
@@ -55,7 +55,7 @@ export const INITIAL_STAFF: StaffUser[] = [
     email: 'david.ross@bightrealestate.com',
     role: 'admin',
     title: 'Listing Coordinator & Commercial Specialist',
-    phone: '(415) 554-1903',
+    phone: '+92 333 7788990',
     avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80',
     licenseNumber: 'CA-DRE #02239014',
     commissionRate: 2.0,
@@ -65,6 +65,51 @@ export const INITIAL_STAFF: StaffUser[] = [
     isActive: true,
     joinedDate: '2023-04-18',
   },
+];
+
+export const INITIAL_CUSTOMERS: CustomerUser[] = [
+  {
+    id: 'cust-1',
+    name: 'Hamza Sheikh',
+    email: 'hamza.sheikh@gmail.com',
+    phone: '+92 321 8899123',
+    role: 'client',
+    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80',
+    preferredLocation: 'DHA Phase 8, Karachi',
+    budgetRange: 'PKR 60M - 120M',
+    inquiriesCount: 3,
+    status: 'active',
+    joinedDate: '2023-04-12',
+    notes: 'Looking for modern 4-bedroom villa with private pool.'
+  },
+  {
+    id: 'cust-2',
+    name: 'Fatima Al-Hassan',
+    email: 'fatima.alhassan@outlook.com',
+    phone: '+92 300 4455667',
+    role: 'client',
+    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80',
+    preferredLocation: 'Clifton Block 4 & 5',
+    budgetRange: 'PKR 150M - 300M',
+    inquiriesCount: 2,
+    status: 'active',
+    joinedDate: '2023-08-20',
+    notes: 'Interested in luxury penthouse sea view developments.'
+  },
+  {
+    id: 'cust-3',
+    name: 'Zainab Malik',
+    email: 'zainab.malik@luxuryestates.pk',
+    phone: '+92 333 9988776',
+    role: 'client',
+    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80',
+    preferredLocation: 'Bahria Town Karachi',
+    budgetRange: 'PKR 25M - 45M',
+    inquiriesCount: 1,
+    status: 'active',
+    joinedDate: '2024-01-15',
+    notes: 'First-time luxury buyer, interested in gated communities.'
+  }
 ];
 
 export const INITIAL_PROPERTIES: Property[] = [
@@ -529,3 +574,26 @@ export const ALL_AMENITIES_LIST = [
   'Separate Au-Pair / Guest Suite',
   'Dolby Atmos Private Screening Room'
 ];
+
+export const INITIAL_WEBSITE_CONTENT = {
+  heroTagline: 'Curated Architectural Residences & Estates',
+  heroHeading: 'Discover Exceptional Homes Tailored to Your Life',
+  heroSubheading: 'Browse our exclusive portfolio of luxury residences, penthouses, and private estates. Connect with dedicated advisory partners for VIP tours.',
+  aboutTitle: 'The Premier Standard in Luxury Real Estate',
+  aboutDescription: 'Bight Real Estate is an ultra-prime property advisory group, specializing in high-value residential developments, luxury penthouses, bespoke villas, and institutional property portfolios.',
+  aboutMission: 'Our fiduciary commitment ensures transparent title audits, discreet transactions, and uncompromising architectural excellence for discerning clients worldwide.',
+  contactOfficeAddress: 'Suite 402, Executive Heights, Sector F-7/2, Blue Area, Islamabad, Pakistan',
+  contactPhone: '+92 51 8489200',
+  contactWhatsApp: '+92 300 5550100',
+  contactEmail: 'advisory@bightrealestate.com',
+  contactHours: 'Mon – Sat: 9:00 AM – 7:00 PM (PKT)',
+  contactMapLocationName: 'Islamabad Financial District & F-7 Executive Hub',
+  feature1Title: 'Curated Luxury Portfolio',
+  feature1Desc: 'Every residence in our portfolio undergoes a rigorous architectural evaluation and verified title audit before public curation.',
+  feature2Title: 'Fiduciary Advisory',
+  feature2Desc: 'Our licensed superadmin brokers and luxury advisors protect your interests across valuation, negotiation, and escrow closing.',
+  feature3Title: '4K Virtual & VIP Tours',
+  feature3Desc: 'Experience high-definition live video walkthroughs or book private chauffeur-accompanied estate visits on your schedule.',
+  footerText: '© Bight Real Estate Inc. • Broker License #PK-RE-019284 • Equal Housing Opportunity.',
+};
+

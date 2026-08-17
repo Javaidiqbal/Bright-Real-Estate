@@ -6,6 +6,8 @@ import { ListingsManagement } from './ListingsManagement';
 import { LeadsCRM } from './LeadsCRM';
 import { TourCalendar } from './TourCalendar';
 import { TeamManagement } from './TeamManagement';
+import { CustomerManagement } from './CustomerManagement';
+import { WebsiteEditor } from './WebsiteEditor';
 import { AnalyticsView } from './AnalyticsView';
 import { AuditLogsView } from './AuditLogsView';
 import { ListingEditorModal } from './ListingEditorModal';
@@ -131,6 +133,14 @@ export const StaffPortal: React.FC = () => {
 
           {activeStaffTab === 'team' && (
             <TeamManagement />
+          )}
+
+          {activeStaffTab === 'customers' && (
+            <CustomerManagement />
+          )}
+
+          {activeStaffTab === 'website_editor' && (
+            <WebsiteEditor />
           )}
 
           {activeStaffTab === 'audit' && (

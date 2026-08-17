@@ -2,37 +2,53 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   Property, 
   StaffUser, 
+  CustomerUser,
   LeadInquiry, 
   AuditLog, 
   UserRole, 
   LeadStatus, 
   PropertyStatus,
-  AuthUser
+  AuthUser,
+  WebsiteContent
 } from '../types';
 import { 
   INITIAL_PROPERTIES, 
   INITIAL_STAFF, 
+  INITIAL_CUSTOMERS,
   INITIAL_LEADS, 
-  INITIAL_AUDIT_LOGS 
+  INITIAL_AUDIT_LOGS,
+  INITIAL_WEBSITE_CONTENT
 } from '../data/mockData';
 
 export const SUPERADMIN_EMAIL = 'ijavaid91@gmail.com';
+
+// Helper to normalize phone numbers for robust matching (e.g. +92 300 1234567 vs 03001234567)
+export const normalizePhoneNumber = (phoneStr: string): string => {
+  if (!phoneStr) return '';
+  const digits = phoneStr.replace(/\D/g, '');
+  // If starts with 0 (e.g., 0300...), normalize to 92300...
+  if (digits.startsWith('0') && digits.length === 11) {
+    return '92' + digits.slice(1);
+  }
+  return digits;
+};
 
 interface AppContextType {
   // Authentication State
   currentUser: AuthUser | null;
   isAuthenticated: boolean;
   isAuthModalOpen: boolean;
-  authModalTab: 'login' | 'signup';
-  openAuthModal: (tab?: 'login' | 'signup') => void;
+  authModalTab: 'login' | 'signup' | 'forgot_password';
+  openAuthModal: (tab?: 'login' | 'signup' | 'forgot_password') => void;
   closeAuthModal: () => void;
-  login: (email: string, password?: string) => Promise<{ success: boolean; user?: AuthUser; error?: string }>;
+  login: (identifier: string, password?: string) => Promise<{ success: boolean; user?: AuthUser; error?: string }>;
   signup: (name: string, email: string, rolePreference?: 'client' | 'admin', phone?: string, password?: string) => Promise<{ success: boolean; user?: AuthUser; error?: string }>;
   logout: () => void;
   changePassword: (currentPassword: string, newPassword: string, authorizationCode?: string) => Promise<{ success: boolean; error?: string }>;
+  forgotPasswordReset: (email: string, authorizationCode: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
   updateUserProfile: (updates: { name?: string; phone?: string; title?: string; avatar?: string }) => Promise<{ success: boolean; error?: string }>;
-  sendEmailAuthorizationCode: (email: string, purpose: 'signup' | 'password_change') => Promise<{ success: boolean; code: string; error?: string }>;
-  verifyEmailAuthorizationCode: (email: string, code: string, purpose: 'signup' | 'password_change') => { success: boolean; error?: string };
+  sendEmailAuthorizationCode: (email: string, purpose: 'signup' | 'password_change' | 'password_recovery') => Promise<{ success: boolean; code: string; error?: string }>;
+  verifyEmailAuthorizationCode: (email: string, code: string, purpose: 'signup' | 'password_change' | 'password_recovery') => { success: boolean; error?: string };
 
   // Account Settings Modal
   isAccountSettingsOpen: boolean;
@@ -46,6 +62,7 @@ interface AppContextType {
   currentUserRole: UserRole;
   currentStaffUser: StaffUser | null;
   staffList: StaffUser[];
+  customerList: CustomerUser[];
   
   // Properties State & Actions
   properties: Property[];
@@ -66,9 +83,35 @@ interface AppContextType {
   assignLeadAgent: (leadId: string, agentId: string) => void;
 
   // Staff Management (Superadmin)
-  addStaffMember: (data: Omit<StaffUser, 'id' | 'totalDealsClosed' | 'salesVolume' | 'activeListingsCount' | 'joinedDate'>) => void;
-  updateStaffMember: (staffId: string, updates: Partial<StaffUser>) => void;
+  addStaffMember: (data: {
+    name: string;
+    email: string;
+    phone: string;
+    password?: string;
+    role?: 'superadmin' | 'admin';
+    title?: string;
+    licenseNumber?: string;
+    commissionRate?: number;
+    avatar?: string;
+  }) => { success: boolean; error?: string; staff?: StaffUser };
+  updateStaffMember: (staffId: string, updates: Partial<StaffUser> & { password?: string }) => { success: boolean; error?: string };
+  deleteStaffMember: (staffId: string) => { success: boolean; error?: string };
   toggleStaffActive: (staffId: string) => void;
+
+  // Customer Management (Superadmin)
+  addCustomer: (data: {
+    name: string;
+    email: string;
+    phone: string;
+    password?: string;
+    preferredLocation?: string;
+    budgetRange?: string;
+    notes?: string;
+    avatar?: string;
+  }) => { success: boolean; error?: string; customer?: CustomerUser };
+  updateCustomer: (customerId: string, updates: Partial<CustomerUser> & { password?: string }) => { success: boolean; error?: string };
+  deleteCustomer: (customerId: string) => { success: boolean; error?: string };
+  toggleCustomerActive: (customerId: string) => void;
 
   // Audit Logs
   auditLogs: AuditLog[];
@@ -77,8 +120,12 @@ interface AppContextType {
   // Utilities & Modals
   selectedPropertyForDetail: Property | null;
   setSelectedPropertyForDetail: (property: Property | null) => void;
-  activeStaffTab: 'dashboard' | 'listings' | 'leads' | 'calendar' | 'team' | 'analytics' | 'audit';
-  setActiveStaffTab: (tab: 'dashboard' | 'listings' | 'leads' | 'calendar' | 'team' | 'analytics' | 'audit') => void;
+  activeStaffTab: 'dashboard' | 'listings' | 'leads' | 'calendar' | 'team' | 'customers' | 'website_editor' | 'analytics' | 'audit';
+  setActiveStaffTab: (tab: 'dashboard' | 'listings' | 'leads' | 'calendar' | 'team' | 'customers' | 'website_editor' | 'analytics' | 'audit') => void;
+
+  // Website Content CMS (Superadmin editable)
+  websiteContent: WebsiteContent;
+  updateWebsiteContent: (updates: Partial<WebsiteContent>) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -88,11 +135,13 @@ const STORAGE_KEYS = {
   USER_PASSWORDS: 'bight_user_passwords_v2',
   PROPERTIES: 'bight_properties_v2',
   STAFF: 'bight_staff_v2',
+  CUSTOMERS: 'bight_customers_v2',
   LEADS: 'bight_leads_v2',
   AUDIT: 'bight_audit_v2',
   FAVORITES: 'bight_favorites_v2',
   MY_INQUIRIES: 'bight_my_inquiries_v2',
   CURRENT_UI: 'bight_current_ui_v2',
+  WEBSITE_CONTENT: 'bight_website_content_v2',
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -110,14 +159,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (saved) {
       try { return JSON.parse(saved); } catch (e) { console.error(e); }
     }
-    return {};
+    // Initialize default credentials
+    return {
+      'ijavaid91@gmail.com': 'admin123',
+      'marcus.chen@bightrealestate.com': 'admin123',
+      'sarah.jenkins@bightrealestate.com': 'admin123',
+      'david.ross@bightrealestate.com': 'admin123',
+      'hamza.sheikh@gmail.com': 'client123',
+      'fatima.alhassan@outlook.com': 'client123',
+      'zainab.malik@luxuryestates.pk': 'client123',
+    };
   });
 
   // Verification codes store: key = email.toLowerCase() + '_' + purpose
   const [activeVerificationCodes, setActiveVerificationCodes] = useState<Record<string, { code: string; expiresAt: number }>>({});
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authModalTab, setAuthModalTab] = useState<'login' | 'signup'>('login');
+  const [authModalTab, setAuthModalTab] = useState<'login' | 'signup' | 'forgot_password'>('login');
 
   // Account Settings Modal State
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
@@ -137,6 +195,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (e) { console.error(e); }
     }
     return INITIAL_STAFF;
+  });
+
+  const [customerList, setCustomerList] = useState<CustomerUser[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.CUSTOMERS);
+    if (saved) {
+      try { 
+        return JSON.parse(saved); 
+      } catch (e) { console.error(e); }
+    }
+    return INITIAL_CUSTOMERS;
   });
 
   const [currentInterface, setCurrentInterface] = useState<'public' | 'staff'>(() => {
@@ -186,7 +254,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [selectedPropertyForDetail, setSelectedPropertyForDetail] = useState<Property | null>(null);
-  const [activeStaffTab, setActiveStaffTab] = useState<'dashboard' | 'listings' | 'leads' | 'calendar' | 'team' | 'analytics' | 'audit'>('dashboard');
+  const [activeStaffTab, setActiveStaffTab] = useState<'dashboard' | 'listings' | 'leads' | 'calendar' | 'team' | 'customers' | 'website_editor' | 'analytics' | 'audit'>('dashboard');
+
+  const [websiteContent, setWebsiteContent] = useState<WebsiteContent>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.WEBSITE_CONTENT);
+    if (saved) {
+      try { return { ...INITIAL_WEBSITE_CONTENT, ...JSON.parse(saved) }; } catch (e) { console.error(e); }
+    }
+    return INITIAL_WEBSITE_CONTENT;
+  });
+
+  const updateWebsiteContent = (updates: Partial<WebsiteContent>) => {
+    setWebsiteContent(prev => {
+      const next = { ...prev, ...updates };
+      localStorage.setItem(STORAGE_KEYS.WEBSITE_CONTENT, JSON.stringify(next));
+      return next;
+    });
+    addAuditLog('system_settings', 'Superadmin updated public website content & copy configuration.');
+  };
 
   // Persistence to local storage
   useEffect(() => {
@@ -204,6 +289,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.STAFF, JSON.stringify(staffList));
   }, [staffList]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(customerList));
+  }, [customerList]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.PROPERTIES, JSON.stringify(properties));
@@ -250,7 +339,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         totalDealsClosed: 20,
         salesVolume: 15000000,
         isActive: true,
-        joinedDate: currentUser.createdAt.split('T')[0],
+        joinedDate: currentUser.createdAt ? currentUser.createdAt.split('T')[0] : '2023-01-01',
       };
     }
     return null;
@@ -258,7 +347,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const currentUserRole: UserRole = currentUser ? currentUser.role : 'public';
 
-  const openAuthModal = (tab: 'login' | 'signup' = 'login') => {
+  const openAuthModal = (tab: 'login' | 'signup' | 'forgot_password' = 'login') => {
     setAuthModalTab(tab);
     setIsAuthModalOpen(true);
   };
@@ -276,7 +365,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Check if email exists in staff list
     const staffMatch = staffList.find(s => s.email.toLowerCase() === normalizedEmail);
     if (staffMatch) {
-      return staffMatch.role === 'superadmin' && normalizedEmail === SUPERADMIN_EMAIL ? 'superadmin' : 'admin';
+      return staffMatch.role === 'superadmin' && normalizedEmail === SUPERADMIN_EMAIL ? 'superadmin' : staffMatch.role;
     }
     if (requestedRole === 'admin') {
       return 'admin';
@@ -284,51 +373,123 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return 'client';
   };
 
-  // Login handler
-  const login = async (email: string, password?: string): Promise<{ success: boolean; user?: AuthUser; error?: string }> => {
-    const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail) {
-      return { success: false, error: 'Please enter a valid email address.' };
+  // Login handler supporting Email Address OR Mobile Number
+  const login = async (identifier: string, password?: string): Promise<{ success: boolean; user?: AuthUser; error?: string }> => {
+    const cleanIdentifier = identifier.trim();
+    if (!cleanIdentifier) {
+      return { success: false, error: 'Please enter your email address or mobile number.' };
     }
 
-    const role = determineRole(normalizedEmail);
-    const existingStaff = staffList.find(s => s.email.toLowerCase() === normalizedEmail);
+    const normalizedEmail = cleanIdentifier.toLowerCase();
+    const normalizedPhoneDigits = normalizePhoneNumber(cleanIdentifier);
 
-    const user: AuthUser = {
-      id: existingStaff?.id || `user-${Date.now()}`,
-      name: existingStaff?.name || (normalizedEmail === SUPERADMIN_EMAIL ? 'Ijaz Javaid' : normalizedEmail.split('@')[0].replace('.', ' ').replace(/\b\w/g, l => l.toUpperCase())),
-      email: normalizedEmail,
-      role: role,
-      avatar: existingStaff?.avatar || (role === 'superadmin' 
-        ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
-        : role === 'admin' 
-          ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80'
-          : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80'),
-      phone: existingStaff?.phone || '+92 300 1234567',
-      title: existingStaff?.title || (role === 'superadmin' ? 'Superadmin Broker' : role === 'admin' ? 'Real Estate Advisor' : 'Registered Client'),
-      createdAt: new Date().toISOString(),
-    };
+    // 1. Check if identifier matches Staff
+    let matchedStaff = staffList.find(s => {
+      if (s.email.toLowerCase() === normalizedEmail) return true;
+      if (normalizedPhoneDigits && normalizePhoneNumber(s.phone) === normalizedPhoneDigits) return true;
+      return false;
+    });
 
-    // If password supplied, store or verify
-    if (password && password.trim()) {
+    // 2. Check if identifier matches Customer
+    let matchedCustomer = !matchedStaff ? customerList.find(c => {
+      if (c.email.toLowerCase() === normalizedEmail) return true;
+      if (normalizedPhoneDigits && normalizePhoneNumber(c.phone) === normalizedPhoneDigits) return true;
+      return false;
+    }) : undefined;
+
+    // Check if root superadmin by email
+    const isRootSuperadmin = normalizedEmail === SUPERADMIN_EMAIL;
+
+    let targetEmail = normalizedEmail;
+    let targetRole: 'superadmin' | 'admin' | 'client' = 'client';
+    let targetName = cleanIdentifier;
+    let targetPhone = cleanIdentifier;
+    let targetAvatar = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80';
+    let targetTitle = 'Registered Client';
+    let targetId = `user-${Date.now()}`;
+
+    if (isRootSuperadmin) {
+      targetEmail = SUPERADMIN_EMAIL;
+      targetRole = 'superadmin';
+      targetName = matchedStaff?.name || 'Ijaz Javaid';
+      targetPhone = matchedStaff?.phone || '+92 300 1234567';
+      targetAvatar = matchedStaff?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80';
+      targetTitle = 'Managing Principal & Superadmin Broker';
+      targetId = matchedStaff?.id || 'staff-1';
+    } else if (matchedStaff) {
+      targetEmail = matchedStaff.email.toLowerCase();
+      targetRole = matchedStaff.role;
+      targetName = matchedStaff.name;
+      targetPhone = matchedStaff.phone;
+      targetAvatar = matchedStaff.avatar;
+      targetTitle = matchedStaff.title;
+      targetId = matchedStaff.id;
+
+      if (!matchedStaff.isActive) {
+        return { success: false, error: 'Your staff account is currently deactivated. Please contact the Superadmin.' };
+      }
+    } else if (matchedCustomer) {
+      targetEmail = matchedCustomer.email.toLowerCase();
+      targetRole = 'client';
+      targetName = matchedCustomer.name;
+      targetPhone = matchedCustomer.phone;
+      targetAvatar = matchedCustomer.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80';
+      targetTitle = 'Verified Luxury Client';
+      targetId = matchedCustomer.id;
+
+      if (matchedCustomer.status === 'inactive') {
+        return { success: false, error: 'Your customer account is currently inactive. Please contact support.' };
+      }
+    } else {
+      // If it looks like an email, we allow fallback client auto-generation with given password
+      if (normalizedEmail.includes('@')) {
+        targetEmail = normalizedEmail;
+        targetRole = determineRole(normalizedEmail);
+        targetName = normalizedEmail.split('@')[0].replace('.', ' ').replace(/\b\w/g, l => l.toUpperCase());
+        targetPhone = '+92 300 1234567';
+      } else {
+        return { success: false, error: 'No account found matching this mobile number or email. Please check your credentials or register.' };
+      }
+    }
+
+    // Password verification check
+    const storedPw = userPasswords[targetEmail] || (normalizedPhoneDigits ? userPasswords[normalizedPhoneDigits] : undefined);
+    if (storedPw && password !== undefined) {
+      if (storedPw.trim() !== '' && storedPw !== password.trim()) {
+        return { success: false, error: 'Invalid password. Please check your credentials or use Forgot Password.' };
+      }
+    } else if (password && password.trim()) {
+      // Record initial password for this email and phone
       setUserPasswords(prev => ({
         ...prev,
-        [normalizedEmail]: password.trim()
+        [targetEmail]: password.trim(),
+        ...(normalizedPhoneDigits ? { [normalizedPhoneDigits]: password.trim() } : {})
       }));
     }
+
+    const user: AuthUser = {
+      id: targetId,
+      name: targetName,
+      email: targetEmail,
+      role: targetRole,
+      avatar: targetAvatar,
+      phone: targetPhone,
+      title: targetTitle,
+      createdAt: new Date().toISOString(),
+    };
 
     setCurrentUser(user);
     closeAuthModal();
 
     // Portal differentiation after login
-    if (role === 'superadmin' || role === 'admin') {
+    if (targetRole === 'superadmin' || targetRole === 'admin') {
       setCurrentInterface('staff');
       setActiveStaffTab('dashboard');
     } else {
       setCurrentInterface('public');
     }
 
-    addAuditLog('system_settings', `User logged in: ${user.name} (${user.email}) as ${user.role.toUpperCase()}`, user.id);
+    addAuditLog('system_settings', `User logged in: ${user.name} (${user.email} / ${user.phone}) as ${user.role.toUpperCase()}`, user.id);
     return { success: true, user };
   };
 
@@ -345,6 +506,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, error: 'Please provide both your full name and email.' };
     }
 
+    if (!phone || !phone.trim()) {
+      return { success: false, error: 'Mobile number is required.' };
+    }
+
+    if (!password || password.length < 6) {
+      return { success: false, error: 'Password is required and must be at least 6 characters in length.' };
+    }
+
     const role = determineRole(normalizedEmail, rolePreference);
 
     const user: AuthUser = {
@@ -357,16 +526,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         : role === 'admin' 
           ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80'
           : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80',
-      phone: phone?.trim() || '+92 300 1234567',
-      title: role === 'superadmin' ? 'Superadmin Broker' : role === 'admin' ? 'Executive Advisor' : 'Verified Buyer/Tenant',
+      phone: phone.trim(),
+      title: role === 'superadmin' ? 'Superadmin Broker' : role === 'admin' ? 'Executive Advisor' : 'Verified Client',
       createdAt: new Date().toISOString(),
     };
 
-    if (password && password.trim()) {
-      setUserPasswords(prev => ({
-        ...prev,
-        [normalizedEmail]: password.trim()
-      }));
+    const phoneDigits = normalizePhoneNumber(phone);
+    setUserPasswords(prev => ({
+      ...prev,
+      [normalizedEmail]: password.trim(),
+      ...(phoneDigits ? { [phoneDigits]: password.trim() } : {})
+    }));
+
+    // If client, also add to customerList if not already present
+    if (role === 'client') {
+      const existsInCustomers = customerList.some(c => c.email.toLowerCase() === normalizedEmail);
+      if (!existsInCustomers) {
+        const newCustomer: CustomerUser = {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone || phone.trim(),
+          role: 'client',
+          avatar: user.avatar,
+          status: 'active',
+          joinedDate: new Date().toISOString().split('T')[0],
+          inquiriesCount: 0,
+        };
+        setCustomerList(prev => [newCustomer, ...prev]);
+      }
     }
 
     // If signed up as admin or superadmin and not in staffList, add them
@@ -379,7 +567,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           email: user.email,
           role: role === 'superadmin' ? 'superadmin' : 'admin',
           title: user.title || 'Executive Advisor',
-          phone: user.phone || '+92 300 1234567',
+          phone: user.phone || phone.trim(),
           avatar: user.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
           licenseNumber: `PK-RE #${Math.floor(1000000 + Math.random() * 9000000)}`,
           commissionRate: 2.5,
@@ -404,14 +592,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCurrentInterface('public');
     }
 
-    addAuditLog('system_settings', `New user registered: ${user.name} (${user.email}) as ${user.role.toUpperCase()}`, user.id);
+    addAuditLog('system_settings', `New user registered: ${user.name} (${user.email} / ${user.phone}) as ${user.role.toUpperCase()}`, user.id);
     return { success: true, user };
   };
 
   // Send Email Authorization Code
   const sendEmailAuthorizationCode = async (
     email: string, 
-    purpose: 'signup' | 'password_change'
+    purpose: 'signup' | 'password_change' | 'password_recovery'
   ): Promise<{ success: boolean; code: string; error?: string }> => {
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail || !cleanEmail.includes('@')) {
@@ -441,7 +629,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const verifyEmailAuthorizationCode = (
     email: string, 
     code: string, 
-    purpose: 'signup' | 'password_change'
+    purpose: 'signup' | 'password_change' | 'password_recovery'
   ): { success: boolean; error?: string } => {
     const cleanEmail = email.trim().toLowerCase();
     const key = `${cleanEmail}_${purpose}`;
@@ -475,6 +663,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return copy;
     });
 
+    return { success: true };
+  };
+
+  // Forgot Password / Password Recovery via Email ID
+  const forgotPasswordReset = async (
+    email: string,
+    authorizationCode: string,
+    newPassword: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) {
+      return { success: false, error: 'Email address is required.' };
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      return { success: false, error: 'New password must be at least 6 characters in length.' };
+    }
+
+    const verifyRes = verifyEmailAuthorizationCode(cleanEmail, authorizationCode, 'password_recovery');
+    if (!verifyRes.success) {
+      return { success: false, error: verifyRes.error || 'Email authorization failed.' };
+    }
+
+    // Find if user has a matching phone to also update phone password key
+    const staffMatch = staffList.find(s => s.email.toLowerCase() === cleanEmail);
+    const customerMatch = customerList.find(c => c.email.toLowerCase() === cleanEmail);
+    const phoneDigits = staffMatch ? normalizePhoneNumber(staffMatch.phone) : customerMatch ? normalizePhoneNumber(customerMatch.phone) : undefined;
+
+    const updatedPasswords = { 
+      ...userPasswords, 
+      [cleanEmail]: newPassword,
+      ...(phoneDigits ? { [phoneDigits]: newPassword } : {})
+    };
+    setUserPasswords(updatedPasswords);
+
+    try {
+      localStorage.setItem(STORAGE_KEYS.USER_PASSWORDS, JSON.stringify(updatedPasswords));
+    } catch (e) {
+      console.error(e);
+    }
+
+    addAuditLog('system_settings', `Password recovered and reset via email code for: ${cleanEmail}`, 'password_recovery');
     return { success: true };
   };
 
@@ -512,7 +742,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
-    const updatedPasswords = { ...userPasswords, [emailKey]: newPassword };
+    const phoneDigits = currentUser.phone ? normalizePhoneNumber(currentUser.phone) : undefined;
+    const updatedPasswords = { 
+      ...userPasswords, 
+      [emailKey]: newPassword,
+      ...(phoneDigits ? { [phoneDigits]: newPassword } : {})
+    };
     setUserPasswords(updatedPasswords);
     try {
       localStorage.setItem(STORAGE_KEYS.USER_PASSWORDS, JSON.stringify(updatedPasswords));
@@ -520,7 +755,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.error(e);
     }
 
-    addAuditLog('system_settings', `Password successfully updated with email authorization for user: ${currentUser.name} (${currentUser.email})`, currentUser.id);
+    addAuditLog('system_settings', `Password successfully updated by user: ${currentUser.name} (${currentUser.email})`, currentUser.id);
     return { success: true };
   };
 
@@ -557,6 +792,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
       }
       return s;
+    }));
+
+    // Also update in customer list if applicable
+    setCustomerList(prev => prev.map(c => {
+      if (c.email.toLowerCase() === currentUser.email.toLowerCase()) {
+        return {
+          ...c,
+          name: updatedUser.name,
+          phone: updatedUser.phone || c.phone,
+          avatar: updatedUser.avatar || c.avatar,
+        };
+      }
+      return c;
     }));
 
     addAuditLog('system_settings', `Account profile updated for: ${updatedUser.name} (${updatedUser.email})`, currentUser.id);
@@ -604,7 +852,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setFavorites(prev => {
       const isFav = prev.includes(propertyId);
       const next = isFav ? prev.filter(id => id !== propertyId) : [...prev, propertyId];
-      // update property count
       setProperties(pList => pList.map(p => {
         if (p.id === propertyId) {
           return { ...p, favoritesCount: Math.max(0, p.favoritesCount + (isFav ? -1 : 1)) };
@@ -667,9 +914,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setProperties(prev => [newProp, ...prev]);
-    // update staff active listings count
     setStaffList(prev => prev.map(s => s.id === newProp.assignedAgentId ? { ...s, activeListingsCount: s.activeListingsCount + 1 } : s));
-
     addAuditLog('property_created', `Added new listing "${newProp.title}" (PKR ${newProp.price.toLocaleString()})`, newProp.id);
     return newProp;
   };
@@ -682,7 +927,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       return p;
     }));
-
     addAuditLog('property_updated', `Updated details for listing ID: ${propertyId}`, propertyId);
   };
 
@@ -717,7 +961,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setLeads(prev => [newLead, ...prev]);
     setMyPublicInquiries(prev => [newLead, ...prev]);
 
-    // increment inquiriesCount on the property
     if (data.propertyId) {
       setProperties(prev => prev.map(p => {
         if (p.id === data.propertyId) {
@@ -744,7 +987,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       return l;
     }));
-
     addAuditLog('lead_updated', `Lead ID ${leadId} status changed to "${status}"`, leadId);
   };
 
@@ -770,30 +1012,120 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addAuditLog('lead_updated', `Reassigned lead ${leadId} to agent ${agent?.name}`, leadId);
   };
 
-  const addStaffMember = (data: Omit<StaffUser, 'id' | 'totalDealsClosed' | 'salesVolume' | 'activeListingsCount' | 'joinedDate'>) => {
+  // Staff Management (Superadmin)
+  const addStaffMember = (data: {
+    name: string;
+    email: string;
+    phone: string;
+    password?: string;
+    role?: 'superadmin' | 'admin';
+    title?: string;
+    licenseNumber?: string;
+    commissionRate?: number;
+    avatar?: string;
+  }): { success: boolean; error?: string; staff?: StaffUser } => {
+    const name = data.name.trim();
+    const email = data.email.trim().toLowerCase();
+    const phone = data.phone.trim();
+    const password = data.password?.trim();
+
+    if (!name) return { success: false, error: 'Staff member full name is mandatory.' };
+    if (!email || !email.includes('@')) return { success: false, error: 'A valid email address is mandatory.' };
+    if (!phone) return { success: false, error: 'Mobile number is mandatory.' };
+    if (!password || password.length < 6) return { success: false, error: 'Password is mandatory (minimum 6 characters).' };
+
+    // Check if staff email already registered
+    const exists = staffList.some(s => s.email.toLowerCase() === email);
+    if (exists) {
+      return { success: false, error: 'A staff member with this email already exists in the system.' };
+    }
+
     const newStaff: StaffUser = {
-      ...data,
       id: `staff-${Date.now()}`,
+      name,
+      email,
+      phone,
+      role: email === SUPERADMIN_EMAIL ? 'superadmin' : (data.role || 'admin'),
+      title: data.title?.trim() || (data.role === 'superadmin' ? 'Executive Partner' : 'Luxury Property Advisor'),
+      licenseNumber: data.licenseNumber?.trim() || `PK-RE #${Math.floor(1000000 + Math.random() * 9000000)}`,
+      commissionRate: data.commissionRate !== undefined ? Number(data.commissionRate) : 2.5,
+      avatar: data.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
       activeListingsCount: 0,
       totalDealsClosed: 0,
       salesVolume: 0,
+      isActive: true,
       joinedDate: new Date().toISOString().split('T')[0],
     };
-    setStaffList(prev => [...prev, newStaff]);
-    addAuditLog('staff_updated', `Added new team member ${newStaff.name} as ${newStaff.role.toUpperCase()}`, newStaff.id);
+
+    // Store password
+    const phoneDigits = normalizePhoneNumber(phone);
+    setUserPasswords(prev => ({
+      ...prev,
+      [email]: password,
+      ...(phoneDigits ? { [phoneDigits]: password } : {})
+    }));
+
+    setStaffList(prev => [newStaff, ...prev]);
+    addAuditLog('staff_updated', `Superadmin added staff member: ${newStaff.name} (${newStaff.email}, Phone: ${newStaff.phone}) with role ${newStaff.role.toUpperCase()}`, newStaff.id);
+    return { success: true, staff: newStaff };
   };
 
-  const updateStaffMember = (staffId: string, updates: Partial<StaffUser>) => {
+  const updateStaffMember = (staffId: string, updates: Partial<StaffUser> & { password?: string }): { success: boolean; error?: string } => {
+    const target = staffList.find(s => s.id === staffId);
+    if (!target) return { success: false, error: 'Staff member not found.' };
+
+    const email = updates.email ? updates.email.trim().toLowerCase() : target.email.toLowerCase();
+    const phone = updates.phone ? updates.phone.trim() : target.phone;
+
     setStaffList(prev => prev.map(s => {
       if (s.id === staffId) {
-        return { ...s, ...updates };
+        return { 
+          ...s, 
+          ...updates,
+          name: updates.name?.trim() || s.name,
+          email: updates.email?.trim().toLowerCase() || s.email,
+          phone: updates.phone?.trim() || s.phone,
+          role: (s.email.toLowerCase() === SUPERADMIN_EMAIL) ? 'superadmin' : (updates.role || s.role),
+        };
       }
       return s;
     }));
-    addAuditLog('staff_updated', `Updated permissions/details for staff ID: ${staffId}`, staffId);
+
+    // If password provided in edit, update it
+    if (updates.password && updates.password.trim()) {
+      const phoneDigits = normalizePhoneNumber(phone);
+      setUserPasswords(prev => ({
+        ...prev,
+        [email]: updates.password!.trim(),
+        ...(phoneDigits ? { [phoneDigits]: updates.password!.trim() } : {})
+      }));
+    }
+
+    addAuditLog('staff_updated', `Updated details/role for staff member ID: ${staffId}`, staffId);
+    return { success: true };
+  };
+
+  const deleteStaffMember = (staffId: string): { success: boolean; error?: string } => {
+    const target = staffList.find(s => s.id === staffId);
+    if (!target) return { success: false, error: 'Staff member not found.' };
+
+    if (target.email.toLowerCase() === SUPERADMIN_EMAIL) {
+      return { success: false, error: `Root superadmin (${SUPERADMIN_EMAIL}) cannot be deleted.` };
+    }
+
+    if (currentUser && currentUser.id === staffId) {
+      return { success: false, error: 'You cannot delete your own logged-in account.' };
+    }
+
+    setStaffList(prev => prev.filter(s => s.id !== staffId));
+    addAuditLog('staff_updated', `Superadmin deleted staff member: ${target.name} (${target.email})`, staffId);
+    return { success: true };
   };
 
   const toggleStaffActive = (staffId: string) => {
+    const target = staffList.find(s => s.id === staffId);
+    if (target && target.email.toLowerCase() === SUPERADMIN_EMAIL) return;
+
     setStaffList(prev => prev.map(s => {
       if (s.id === staffId) {
         const nextState = !s.isActive;
@@ -802,6 +1134,112 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return s;
     }));
     addAuditLog('staff_updated', `Toggled active status for staff ID: ${staffId}`, staffId);
+  };
+
+  // Customer Management (Superadmin)
+  const addCustomer = (data: {
+    name: string;
+    email: string;
+    phone: string;
+    password?: string;
+    preferredLocation?: string;
+    budgetRange?: string;
+    notes?: string;
+    avatar?: string;
+  }): { success: boolean; error?: string; customer?: CustomerUser } => {
+    const name = data.name.trim();
+    const email = data.email.trim().toLowerCase();
+    const phone = data.phone.trim();
+    const password = data.password?.trim();
+
+    if (!name) return { success: false, error: 'Customer full legal name is mandatory.' };
+    if (!email || !email.includes('@')) return { success: false, error: 'A valid email address is mandatory.' };
+    if (!phone) return { success: false, error: 'Mobile number is mandatory.' };
+    if (!password || password.length < 6) return { success: false, error: 'Initial password is mandatory (minimum 6 characters).' };
+
+    const exists = customerList.some(c => c.email.toLowerCase() === email);
+    if (exists) {
+      return { success: false, error: 'A customer with this email is already registered.' };
+    }
+
+    const newCustomer: CustomerUser = {
+      id: `cust-${Date.now()}`,
+      name,
+      email,
+      phone,
+      role: 'client',
+      preferredLocation: data.preferredLocation?.trim() || 'Karachi Prime Districts',
+      budgetRange: data.budgetRange?.trim() || 'PKR 50M - 150M',
+      notes: data.notes?.trim() || '',
+      avatar: data.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80',
+      status: 'active',
+      inquiriesCount: 0,
+      joinedDate: new Date().toISOString().split('T')[0],
+    };
+
+    const phoneDigits = normalizePhoneNumber(phone);
+    setUserPasswords(prev => ({
+      ...prev,
+      [email]: password,
+      ...(phoneDigits ? { [phoneDigits]: password } : {})
+    }));
+
+    setCustomerList(prev => [newCustomer, ...prev]);
+    addAuditLog('system_settings', `Superadmin registered customer: ${newCustomer.name} (${newCustomer.email}, Phone: ${newCustomer.phone})`, newCustomer.id);
+    return { success: true, customer: newCustomer };
+  };
+
+  const updateCustomer = (customerId: string, updates: Partial<CustomerUser> & { password?: string }): { success: boolean; error?: string } => {
+    const target = customerList.find(c => c.id === customerId);
+    if (!target) return { success: false, error: 'Customer not found.' };
+
+    const email = updates.email ? updates.email.trim().toLowerCase() : target.email.toLowerCase();
+    const phone = updates.phone ? updates.phone.trim() : target.phone;
+
+    setCustomerList(prev => prev.map(c => {
+      if (c.id === customerId) {
+        return { 
+          ...c, 
+          ...updates,
+          name: updates.name?.trim() || c.name,
+          email: updates.email?.trim().toLowerCase() || c.email,
+          phone: updates.phone?.trim() || c.phone,
+        };
+      }
+      return c;
+    }));
+
+    if (updates.password && updates.password.trim()) {
+      const phoneDigits = normalizePhoneNumber(phone);
+      setUserPasswords(prev => ({
+        ...prev,
+        [email]: updates.password!.trim(),
+        ...(phoneDigits ? { [phoneDigits]: updates.password!.trim() } : {})
+      }));
+    }
+
+    addAuditLog('system_settings', `Updated profile for customer ID: ${customerId}`, customerId);
+    return { success: true };
+  };
+
+  const deleteCustomer = (customerId: string): { success: boolean; error?: string } => {
+    const target = customerList.find(c => c.id === customerId);
+    if (!target) return { success: false, error: 'Customer not found.' };
+
+    setCustomerList(prev => prev.filter(c => c.id !== customerId));
+    addAuditLog('system_settings', `Superadmin removed customer account: ${target.name} (${target.email})`, customerId);
+    return { success: true };
+  };
+
+  const toggleCustomerActive = (customerId: string) => {
+    setCustomerList(prev => prev.map(c => {
+      if (c.id === customerId) {
+        const nextStatus = c.status === 'active' ? 'inactive' : 'active';
+        return { ...c, status: nextStatus };
+      }
+      return c;
+    }));
+    addAuditLog('system_settings', `Toggled customer active status for ID: ${customerId}`, customerId);
   };
 
   return (
@@ -817,6 +1255,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         signup,
         logout,
         changePassword,
+        forgotPasswordReset,
         updateUserProfile,
         sendEmailAuthorizationCode,
         verifyEmailAuthorizationCode,
@@ -829,6 +1268,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         currentUserRole,
         currentStaffUser,
         staffList,
+        customerList,
         properties,
         favorites,
         toggleFavorite,
@@ -845,13 +1285,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         assignLeadAgent,
         addStaffMember,
         updateStaffMember,
+        deleteStaffMember,
         toggleStaffActive,
+        addCustomer,
+        updateCustomer,
+        deleteCustomer,
+        toggleCustomerActive,
         auditLogs,
         addAuditLog,
         selectedPropertyForDetail,
         setSelectedPropertyForDetail,
         activeStaffTab,
         setActiveStaffTab,
+        websiteContent,
+        updateWebsiteContent,
       }}
     >
       {children}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FilterState, PropertyCategory } from '../../types';
+import { useApp, SUPERADMIN_EMAIL } from '../../context/AppContext';
 import { 
   Search, 
   SlidersHorizontal, 
@@ -10,7 +11,8 @@ import {
   Sparkles,
   X,
   ChevronDown,
-  Check
+  Check,
+  Edit3
 } from 'lucide-react';
 import { ALL_AMENITIES_LIST } from '../../data/mockData';
 
@@ -27,6 +29,9 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
   onResetFilters,
   totalResults,
 }) => {
+  const { websiteContent, currentUser, setInterface, setActiveStaffTab } = useApp();
+  const isSuperadmin = currentUser?.role === 'superadmin' || currentUser?.email.toLowerCase() === SUPERADMIN_EMAIL.toLowerCase();
+
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const categories: { id: string; label: string }[] = [
@@ -65,18 +70,33 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
       
       <div className="max-w-6xl mx-auto relative z-10">
         
-        {/* Hero Copy */}
-        <div className="text-center max-w-3xl mx-auto mb-8">
+        {/* Hero Copy - Dynamic from Website Content CMS */}
+        <div className="text-center max-w-3xl mx-auto mb-8 relative">
+          {isSuperadmin && (
+            <div className="flex justify-center mb-3">
+              <button
+                onClick={() => {
+                  setInterface('staff');
+                  setActiveStaffTab('website_editor');
+                }}
+                className="px-3 py-1 bg-purple-900/80 hover:bg-purple-800 text-purple-200 border border-purple-600 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                title="Edit public website headlines & copy in Superadmin CMS"
+              >
+                <Edit3 className="w-3 h-3 text-amber-400" />
+                <span>Superadmin: Edit Public Copy</span>
+              </button>
+            </div>
+          )}
+
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold uppercase tracking-widest mb-4">
             <Sparkles className="w-3.5 h-3.5" />
-            Curated Architectural Residences
+            {websiteContent.heroTagline || 'Curated Architectural Residences & Estates'}
           </div>
           <h1 className="text-3xl sm:text-5xl font-bold font-serif tracking-tight text-white leading-tight">
-            Discover Exceptional Homes <br className="hidden sm:inline" />
-            Tailored to Your Life
+            {websiteContent.heroHeading || 'Discover Exceptional Homes Tailored to Your Life'}
           </h1>
           <p className="mt-3 text-sm sm:text-base text-slate-300 max-w-2xl mx-auto leading-relaxed">
-            Browse our exclusive portfolio of luxury residences, penthouses, and private estates. Connect with dedicated advisory partners for VIP tours.
+            {websiteContent.heroSubheading || 'Browse our exclusive portfolio of luxury residences, penthouses, and private estates. Connect with dedicated advisory partners for VIP tours.'}
           </p>
         </div>
 
@@ -89,7 +109,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
               <button
                 type="button"
                 onClick={() => onFilterChange({ listingType: 'all' })}
-                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   filters.listingType === 'all'
                     ? 'bg-slate-900 text-white shadow-sm'
                     : 'text-slate-600 hover:text-slate-900'
@@ -100,7 +120,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
               <button
                 type="button"
                 onClick={() => onFilterChange({ listingType: 'for_sale' })}
-                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   filters.listingType === 'for_sale'
                     ? 'bg-slate-900 text-white shadow-sm'
                     : 'text-slate-600 hover:text-slate-900'
@@ -111,13 +131,13 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
               <button
                 type="button"
                 onClick={() => onFilterChange({ listingType: 'for_rent' })}
-                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   filters.listingType === 'for_rent'
                     ? 'bg-slate-900 text-white shadow-sm'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                For Lease
+                For Rent
               </button>
             </div>
 

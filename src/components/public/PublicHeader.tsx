@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { PwaInstallPrompt } from '../common/PwaInstallPrompt';
 import { 
   Building2, 
   Heart, 
   Calendar, 
-  Calculator, 
+  MessageSquare, 
   ShieldCheck, 
   Compass,
   LogIn,
@@ -15,20 +16,21 @@ import {
   ChevronDown,
   LayoutDashboard,
   KeyRound,
-  Settings
+  Settings,
+  Phone
 } from 'lucide-react';
 
 interface PublicHeaderProps {
   onOpenFavorites: () => void;
   onOpenInquiries: () => void;
-  onOpenCalculator: () => void;
+  onOpenContactUs: () => void;
   onScrollToExplore: () => void;
 }
 
 export const PublicHeader: React.FC<PublicHeaderProps> = ({
   onOpenFavorites,
   onOpenInquiries,
-  onOpenCalculator,
+  onOpenContactUs,
   onScrollToExplore,
 }) => {
   const { 
@@ -77,11 +79,11 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
           </button>
 
           <button 
-            onClick={onOpenCalculator}
-            className="hover:text-slate-950 transition-colors flex items-center gap-1 cursor-pointer"
+            onClick={onOpenContactUs}
+            className="hover:text-slate-950 transition-colors flex items-center gap-1.5 cursor-pointer text-slate-700 font-semibold"
           >
-            <Calculator className="w-4 h-4 text-slate-400" />
-            Mortgage Calculator
+            <Phone className="w-4 h-4 text-amber-500" />
+            <span>Contact Us</span>
           </button>
 
           <button 
@@ -98,8 +100,11 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
           </button>
         </nav>
 
-        {/* Actions (Favorites + Auth Controls) */}
+        {/* Actions (PWA install + Favorites + Auth Controls) */}
         <div className="flex items-center gap-3">
+          {/* PWA Install Prompt Button */}
+          <PwaInstallPrompt />
+
           {/* Favorites Button */}
           <button
             onClick={onOpenFavorites}

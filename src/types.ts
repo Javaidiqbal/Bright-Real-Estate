@@ -28,6 +28,21 @@ export interface StaffUser {
   joinedDate: string;
 }
 
+export interface CustomerUser {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: 'client';
+  avatar?: string;
+  preferredLocation?: string;
+  budgetRange?: string;
+  inquiriesCount?: number;
+  status: 'active' | 'inactive';
+  joinedDate: string;
+  notes?: string;
+}
+
 export type PropertyStatus = 'active' | 'pending' | 'sold' | 'draft' | 'under_review';
 export type ListingType = 'for_sale' | 'for_rent';
 export type PropertyCategory = 'single_family' | 'luxury_villa' | 'penthouse' | 'condo' | 'townhouse' | 'modern_estate';
@@ -128,3 +143,26 @@ export interface MortgageCalculatorParams {
   homeInsuranceAnnual: number;
   hoaFeeMonthly: number;
 }
+
+export interface WebsiteContent {
+  heroTagline: string;
+  heroHeading: string;
+  heroSubheading: string;
+  aboutTitle: string;
+  aboutDescription: string;
+  aboutMission: string;
+  contactOfficeAddress: string;
+  contactPhone: string;
+  contactWhatsApp: string;
+  contactEmail: string;
+  contactHours: string;
+  contactMapLocationName: string;
+  feature1Title: string;
+  feature1Desc: string;
+  feature2Title: string;
+  feature2Desc: string;
+  feature3Title: string;
+  feature3Desc: string;
+  footerText: string;
+}
+
