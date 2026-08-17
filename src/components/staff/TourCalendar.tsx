@@ -19,13 +19,13 @@ export const TourCalendar: React.FC = () => {
   const tourLeads = leads.filter(l => l.tourDate || l.status === 'tour_scheduled');
 
   return (
-    <div className="p-6 sm:p-8 space-y-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
       
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold font-serif text-slate-900">
+            <h1 className="text-xl sm:text-2xl font-bold font-serif text-slate-900">
               Tour Appointments & Private Viewings
             </h1>
             <span className="px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold">

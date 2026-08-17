@@ -147,9 +147,9 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
       <div className="bg-white text-slate-900 w-full max-w-5xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] border border-slate-200 relative">
         
         {/* Sticky Modal Top Bar */}
-        <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-slate-800 shrink-0">
-          <div className="flex items-center gap-3">
-            <span className="px-2.5 py-0.5 rounded bg-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider">
+        <div className="bg-slate-900 text-white px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between border-b border-slate-800 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <span className="px-2.5 py-0.5 rounded bg-amber-500 text-slate-950 font-bold text-[10px] sm:text-xs uppercase tracking-wider">
               {property.listingType === 'for_sale' ? 'For Sale' : 'For Lease'}
             </span>
             <span className="text-xs text-slate-400 font-mono hidden sm:inline">
@@ -157,10 +157,10 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <button
               onClick={() => toggleFavorite(property.id)}
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors"
+              className="p-1.5 sm:p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors"
               title={isFavorite ? 'Saved' : 'Save'}
             >
               <Heart className={`w-4 h-4 ${isFavorite ? 'fill-rose-500 text-rose-500' : ''}`} />
@@ -168,7 +168,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
 
             <button
               onClick={handleCopyLink}
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors"
+              className="p-1.5 sm:p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors"
               title="Share listing link"
             >
               {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
@@ -176,7 +176,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
 
             <button
               onClick={onClose}
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors ml-1"
+              className="p-1.5 sm:p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors ml-1"
             >
               <X className="w-5 h-5" />
             </button>
@@ -184,7 +184,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
         </div>
 
         {/* Scrollable Modal Body */}
-        <div className="overflow-y-auto flex-1 p-6 space-y-8">
+        <div className="overflow-y-auto flex-1 p-4 sm:p-6 space-y-6 sm:space-y-8">
           
           {/* 1. High-Res Photo Gallery */}
           <div className="space-y-3">

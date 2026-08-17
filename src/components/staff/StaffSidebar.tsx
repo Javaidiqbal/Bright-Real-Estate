@@ -14,10 +14,16 @@ import {
   LogOut,
   Crown,
   KeyRound,
-  Settings
+  Settings,
+  X
 } from 'lucide-react';
 
-export const StaffSidebar: React.FC = () => {
+interface StaffSidebarProps {
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
+}
+
+export const StaffSidebar: React.FC<StaffSidebarProps> = ({ isMobileOpen, onCloseMobile }) => {
   const { 
     currentUser,
     currentStaffUser, 
@@ -52,13 +58,20 @@ export const StaffSidebar: React.FC = () => {
     ] : []),
   ];
 
-  return (
-    <aside className="w-64 bg-slate-900 text-slate-200 border-r border-slate-800 flex flex-col h-screen sticky top-0 shrink-0 select-none">
+  const handleTabClick = (tabId: string) => {
+    setActiveStaffTab(tabId as any);
+    if (onCloseMobile) {
+      onCloseMobile();
+    }
+  };
+
+  const sidebarContent = (
+    <div className="w-64 sm:w-72 lg:w-64 bg-slate-900 text-slate-200 border-r border-slate-800 flex flex-col h-full shrink-0 select-none">
       
       {/* Agency Brand Header */}
-      <div className="p-5 border-b border-slate-800 flex items-center justify-between">
+      <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-amber-500 flex items-center justify-center text-slate-950 shadow-sm font-bold">
+          <div className="w-9 h-9 rounded-xl bg-amber-500 flex items-center justify-center text-slate-950 shadow-sm font-bold shrink-0">
             <Building2 className="w-5 h-5" />
           </div>
           <div>
@@ -70,6 +83,17 @@ export const StaffSidebar: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Mobile Close Button */}
+        {onCloseMobile && (
+          <button
+            onClick={onCloseMobile}
+            className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            title="Close menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* Navigation Links */}
@@ -85,7 +109,7 @@ export const StaffSidebar: React.FC = () => {
           return (
             <button
               key={item.id}
-              onClick={() => setActiveStaffTab(item.id as any)}
+              onClick={() => handleTabClick(item.id)}
               className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 isActive
                   ? 'bg-amber-500 text-slate-950 shadow-sm font-bold'
@@ -155,7 +179,10 @@ export const StaffSidebar: React.FC = () => {
             </div>
 
             <button
-              onClick={() => openAccountSettings('password')}
+              onClick={() => {
+                if (onCloseMobile) onCloseMobile();
+                openAccountSettings('password');
+              }}
               title="Change Password & Account Settings"
               className="p-1.5 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-slate-400 hover:text-amber-400 border border-slate-600 transition-colors shrink-0 cursor-pointer"
             >
@@ -166,7 +193,10 @@ export const StaffSidebar: React.FC = () => {
 
         {/* Change Password & Security Action */}
         <button
-          onClick={() => openAccountSettings('password')}
+          onClick={() => {
+            if (onCloseMobile) onCloseMobile();
+            openAccountSettings('password');
+          }}
           className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-slate-800/60 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold transition-colors cursor-pointer border border-slate-700/40"
         >
           <KeyRound className="w-3.5 h-3.5 text-amber-400" />
@@ -175,7 +205,10 @@ export const StaffSidebar: React.FC = () => {
 
         {/* View Public Marketplace */}
         <button
-          onClick={() => setInterface('public')}
+          onClick={() => {
+            if (onCloseMobile) onCloseMobile();
+            setInterface('public');
+          }}
           className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition-colors cursor-pointer"
         >
           <Globe className="w-3.5 h-3.5 text-amber-400" />
@@ -184,7 +217,10 @@ export const StaffSidebar: React.FC = () => {
 
         {/* Sign Out */}
         <button
-          onClick={logout}
+          onClick={() => {
+            if (onCloseMobile) onCloseMobile();
+            logout();
+          }}
           className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl hover:bg-rose-950/40 text-rose-400 hover:text-rose-300 text-xs font-semibold transition-colors cursor-pointer"
         >
           <LogOut className="w-3.5 h-3.5" />
@@ -193,6 +229,30 @@ export const StaffSidebar: React.FC = () => {
 
       </div>
 
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Persistent Sidebar */}
+      <aside className="hidden lg:flex h-screen sticky top-0 shrink-0">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile Drawer Overlay */}
+      {isMobileOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 flex">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity"
+            onClick={onCloseMobile}
+          />
+          {/* Slide-in Drawer */}
+          <div className="relative z-10 flex h-full max-w-xs w-full animate-in slide-in-from-left duration-200">
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+    </>
   );
 };

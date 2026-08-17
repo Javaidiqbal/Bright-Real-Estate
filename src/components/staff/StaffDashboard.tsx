@@ -45,16 +45,16 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({ onOpenAddListing
   const totalAgencySalesVolume = staffList.reduce((acc, s) => acc + s.salesVolume, 0);
 
   return (
-    <div className="p-6 sm:p-8 space-y-8 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 max-w-7xl mx-auto">
       
       {/* Welcome Banner & Quick Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-850 to-indigo-950 text-white p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-850 to-indigo-950 text-white p-5 sm:p-8 rounded-2xl sm:rounded-3xl border border-slate-800 shadow-xl">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-2">
             <ShieldCheck className="w-3.5 h-3.5" />
             {isSuperadmin ? 'Superadmin Executive View' : 'Internal Staff Agent Console'}
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold font-serif">
+          <h1 className="text-xl sm:text-3xl font-bold font-serif">
             Welcome back, {currentStaffUser?.name || 'Partner'}
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl">
@@ -64,18 +64,18 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({ onOpenAddListing
           </p>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 flex-wrap">
           <button
             onClick={onOpenAddListing}
-            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center gap-2"
+            className="flex-1 sm:flex-initial px-3.5 sm:px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
-            <span>Create New Listing</span>
+            <span>Create Listing</span>
           </button>
 
           <button
             onClick={() => setActiveStaffTab('leads')}
-            className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition-all flex items-center gap-2"
+            className="flex-1 sm:flex-initial px-3.5 sm:px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <Users className="w-4 h-4 text-amber-400" />
             <span>Leads CRM</span>

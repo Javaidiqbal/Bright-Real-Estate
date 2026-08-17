@@ -168,17 +168,17 @@ export const TeamManagement: React.FC = () => {
   };
 
   return (
-    <div className="p-6 sm:p-8 space-y-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
       
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold font-serif text-slate-900">
+            <h1 className="text-xl sm:text-2xl font-bold font-serif text-slate-900">
               Staff & RBAC Role Management
             </h1>
             <span className="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 text-xs font-bold flex items-center gap-1">
-              <Crown className="w-3.5 h-3.5 text-purple-700" /> Superadmin Console
+              <Crown className="w-3.5 h-3.5 text-purple-700" /> Superadmin
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
@@ -188,7 +188,7 @@ export const TeamManagement: React.FC = () => {
 
         <button
           onClick={() => { setIsAddingMember(true); setErrorMessage(null); }}
-          className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-xs transition-all flex items-center gap-2 self-start sm:self-auto cursor-pointer"
+          className="px-4 sm:px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 self-stretch sm:self-auto cursor-pointer"
         >
           <UserPlus className="w-4 h-4 text-amber-400" />
           <span>Add Staff Member</span>

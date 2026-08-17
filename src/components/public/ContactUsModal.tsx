@@ -72,14 +72,14 @@ export const ContactUsModal: React.FC<ContactUsModalProps> = ({ isOpen, onClose 
       <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden">
         
         {/* Header */}
-        <div className="bg-slate-900 text-white p-6 flex items-center justify-between border-b border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+        <div className="bg-slate-900 text-white p-4 sm:p-6 flex items-center justify-between border-b border-slate-800">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
               <Building2 className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold font-serif">Contact Bight Real Estate</h2>
-              <p className="text-xs text-slate-400">Ultra-Prime Luxury Property & Investment Advisory</p>
+              <h2 className="text-base sm:text-lg font-bold font-serif">Contact Bight Real Estate</h2>
+              <p className="text-[11px] sm:text-xs text-slate-400">Ultra-Prime Luxury Property & Investment Advisory</p>
             </div>
           </div>
 
@@ -104,7 +104,7 @@ export const ContactUsModal: React.FC<ContactUsModalProps> = ({ isOpen, onClose 
         </div>
 
         {/* Content Body */}
-        <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 space-y-5 sm:space-y-6 max-h-[80vh] overflow-y-auto">
           
           {/* Agency HQ Overview Card */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
