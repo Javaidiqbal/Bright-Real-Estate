@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useApp, SUPERADMIN_EMAIL } from '../../context/AppContext';
 import { 
   Building2, 
@@ -34,6 +35,26 @@ export const StaffSidebar: React.FC<StaffSidebarProps> = ({ isMobileOpen, onClos
     leads,
     openAccountSettings
   } = useApp();
+
+  // Handle escape key and body scroll lock for mobile staff drawer
+  useEffect(() => {
+    if (isMobileOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape' && onCloseMobile) {
+          onCloseMobile();
+        }
+      };
+
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [isMobileOpen, onCloseMobile]);
 
   const isSuperadmin = currentUser?.role === 'superadmin' || currentUser?.email.toLowerCase() === SUPERADMIN_EMAIL.toLowerCase();
   const newLeadsCount = leads.filter(l => l.status === 'new').length;
@@ -239,19 +260,20 @@ export const StaffSidebar: React.FC<StaffSidebarProps> = ({ isMobileOpen, onClos
         {sidebarContent}
       </aside>
 
-      {/* Mobile Drawer Overlay */}
-      {isMobileOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 flex">
+      {/* Mobile Drawer Overlay Rendered in Portal */}
+      {isMobileOpen && typeof document !== 'undefined' && createPortal(
+        <div className="lg:hidden fixed inset-0 z-[9999] flex">
           {/* Backdrop */}
           <div 
-            className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-slate-950/75 backdrop-blur-xs transition-opacity cursor-pointer"
             onClick={onCloseMobile}
           />
           {/* Slide-in Drawer */}
-          <div className="relative z-10 flex h-full max-w-xs w-full animate-in slide-in-from-left duration-200">
+          <div className="relative z-10 flex h-[100dvh] max-w-xs w-full animate-in slide-in-from-left duration-200">
             {sidebarContent}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

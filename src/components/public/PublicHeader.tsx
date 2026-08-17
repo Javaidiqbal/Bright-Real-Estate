@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useApp } from '../../context/AppContext';
 import { PwaInstallPrompt } from '../common/PwaInstallPrompt';
 import { 
@@ -52,6 +53,26 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
 
   const isStaffRole = currentUser?.role === 'superadmin' || currentUser?.role === 'admin';
   const isSuperadmin = currentUser?.role === 'superadmin';
+
+  // Prevent background scrolling and handle Escape key when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          setIsMobileMenuOpen(false);
+        }
+      };
+
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [isMobileMenuOpen]);
 
   const handleMobileNav = (action: () => void) => {
     setIsMobileMenuOpen(false);
@@ -288,18 +309,18 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
 
       </div>
 
-      {/* Full-Height Vertical Side Drawer for Mobile Navigation */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-50 flex justify-end">
+      {/* Full-Height Vertical Side Drawer for Mobile Navigation Rendered in Portal */}
+      {isMobileMenuOpen && typeof document !== 'undefined' && createPortal(
+        <div className="md:hidden fixed inset-0 z-[9999] flex justify-end">
           {/* Backdrop Blur Overlay */}
           <div 
-            className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-slate-950/75 backdrop-blur-xs transition-opacity cursor-pointer"
             onClick={() => setIsMobileMenuOpen(false)}
             aria-hidden="true"
           />
 
           {/* Vertical Side Panel Drawer */}
-          <aside className="relative z-10 w-[88vw] max-w-sm bg-white h-full shadow-2xl flex flex-col justify-between overflow-hidden border-l border-slate-200 animate-in slide-in-from-right duration-250">
+          <aside className="relative z-10 w-[85vw] max-w-sm bg-white h-[100dvh] shadow-2xl flex flex-col justify-between overflow-hidden border-l border-slate-200 animate-in slide-in-from-right duration-200">
             
             {/* Drawer Header with Logo & Close Button */}
             <div className="p-4 sm:p-5 border-b border-slate-200 bg-slate-900 text-white flex items-center justify-between shrink-0">
@@ -369,14 +390,14 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
                   <div className="grid grid-cols-2 gap-2 pt-1">
                     <button
                       onClick={() => handleMobileNav(() => openAuthModal('login'))}
-                      className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-white text-slate-900 font-bold text-xs hover:bg-slate-100 transition-colors shadow-xs"
+                      className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-white text-slate-900 font-bold text-xs hover:bg-slate-100 transition-colors shadow-xs cursor-pointer"
                     >
                       <LogIn className="w-3.5 h-3.5" />
                       <span>Log In</span>
                     </button>
                     <button
                       onClick={() => handleMobileNav(() => openAuthModal('signup'))}
-                      className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-400 transition-colors shadow-xs"
+                      className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-400 transition-colors shadow-xs cursor-pointer"
                     >
                       <UserPlus className="w-3.5 h-3.5" />
                       <span>Sign Up</span>
@@ -393,7 +414,7 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
 
                 <button
                   onClick={() => handleMobileNav(onScrollToExplore)}
-                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-100 text-slate-800 font-semibold text-xs sm:text-sm transition-colors text-left group"
+                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-100 text-slate-800 font-semibold text-xs sm:text-sm transition-colors text-left group cursor-pointer"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
@@ -406,7 +427,7 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
 
                 <button
                   onClick={() => handleMobileNav(onOpenContactUs)}
-                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-100 text-slate-800 font-semibold text-xs sm:text-sm transition-colors text-left group"
+                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-100 text-slate-800 font-semibold text-xs sm:text-sm transition-colors text-left group cursor-pointer"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-100 transition-colors">
@@ -418,7 +439,7 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
 
                 <button
                   onClick={() => handleMobileNav(onOpenInquiries)}
-                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-100 text-slate-800 font-semibold text-xs sm:text-sm transition-colors text-left group"
+                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-100 text-slate-800 font-semibold text-xs sm:text-sm transition-colors text-left group cursor-pointer"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
@@ -435,7 +456,7 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
 
                 <button
                   onClick={() => handleMobileNav(onOpenFavorites)}
-                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-100 text-slate-800 font-semibold text-xs sm:text-sm transition-colors text-left group"
+                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-100 text-slate-800 font-semibold text-xs sm:text-sm transition-colors text-left group cursor-pointer"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center group-hover:bg-rose-100 transition-colors">
@@ -459,7 +480,7 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
                   </div>
                   <button
                     onClick={() => handleMobileNav(() => setInterface('staff'))}
-                    className="w-full flex items-center gap-3 p-3 bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm hover:from-slate-800 hover:to-indigo-900 transition-all text-left"
+                    className="w-full flex items-center gap-3 p-3 bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm hover:from-slate-800 hover:to-indigo-900 transition-all text-left cursor-pointer"
                   >
                     <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center text-amber-400 shrink-0">
                       <LayoutDashboard className="w-4 h-4" />
@@ -481,7 +502,7 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
 
                   <button
                     onClick={() => handleMobileNav(() => openAccountSettings('password'))}
-                    className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-100 text-slate-700 text-xs font-medium transition-colors text-left"
+                    className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-100 text-slate-700 text-xs font-medium transition-colors text-left cursor-pointer"
                   >
                     <KeyRound className="w-4 h-4 text-amber-500 shrink-0" />
                     <span>Change Password</span>
@@ -489,7 +510,7 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
 
                   <button
                     onClick={() => handleMobileNav(() => openAccountSettings('profile'))}
-                    className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-100 text-slate-700 text-xs font-medium transition-colors text-left"
+                    className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-100 text-slate-700 text-xs font-medium transition-colors text-left cursor-pointer"
                   >
                     <Settings className="w-4 h-4 text-slate-500 shrink-0" />
                     <span>Account Profile Settings</span>
@@ -497,7 +518,7 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
 
                   <button
                     onClick={() => handleMobileNav(logout)}
-                    className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-rose-50 text-rose-600 text-xs font-semibold transition-colors text-left"
+                    className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-rose-50 text-rose-600 text-xs font-semibold transition-colors text-left cursor-pointer"
                   >
                     <LogOut className="w-4 h-4 shrink-0" />
                     <span>Sign Out</span>
@@ -530,7 +551,8 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
             </div>
 
           </aside>
-        </div>
+        </div>,
+        document.body
       )}
     </header>
   );
