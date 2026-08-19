@@ -17,8 +17,20 @@ import {
   ShieldCheck, 
   Award,
   ExternalLink,
-  MessageSquare
+  MessageSquare,
+  Facebook,
+  Instagram,
+  Youtube,
+  Share2,
+  HelpCircle
 } from 'lucide-react';
+
+// Custom TikTok icon for sleek aesthetic consistency
+const TikTokIcon: React.FC<{ className?: string }> = ({ className = 'w-3.5 h-3.5' }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.49 6.27 6.27 0 0 0 1.86-4.49V8.75a8.28 8.28 0 0 0 4.91 1.6V6.9a4.85 4.85 0 0 1-1-.21z" />
+  </svg>
+);
 
 export const WebsiteEditor: React.FC = () => {
   const { 
@@ -30,9 +42,12 @@ export const WebsiteEditor: React.FC = () => {
 
   const isSuperadmin = currentUser?.role === 'superadmin' || currentUser?.email.toLowerCase() === SUPERADMIN_EMAIL.toLowerCase();
 
-  const [formData, setFormData] = useState<WebsiteContent>({ ...websiteContent });
+  const [formData, setFormData] = useState<WebsiteContent>({
+    ...INITIAL_WEBSITE_CONTENT,
+    ...websiteContent
+  });
   const [isSaved, setIsSaved] = useState(false);
-  const [activeSection, setActiveSection] = useState<'hero' | 'about' | 'contact' | 'features' | 'footer'>('hero');
+  const [activeSection, setActiveSection] = useState<'hero' | 'about' | 'contact' | 'features' | 'social' | 'footer'>('hero');
 
   if (!isSuperadmin) {
     return (
@@ -42,7 +57,7 @@ export const WebsiteEditor: React.FC = () => {
         </div>
         <h2 className="text-xl font-bold font-serif text-slate-900">Superadmin Access Required</h2>
         <p className="text-xs text-slate-500 mt-2 mb-6">
-          Public website copywriting and content governance are strictly reserved for the Superadmin ({SUPERADMIN_EMAIL}).
+          Public website copywriting, footer configuration, and social media links governance are strictly reserved for the Superadmin ({SUPERADMIN_EMAIL}).
         </p>
       </div>
     );
@@ -61,7 +76,7 @@ export const WebsiteEditor: React.FC = () => {
   };
 
   const handleResetToDefaults = () => {
-    if (window.confirm('Reset all public website copy to agency default presets?')) {
+    if (window.confirm('Reset all public website copy and footer links to agency default presets?')) {
       setFormData({ ...INITIAL_WEBSITE_CONTENT });
       updateWebsiteContent(INITIAL_WEBSITE_CONTENT);
       setIsSaved(true);
@@ -84,7 +99,7 @@ export const WebsiteEditor: React.FC = () => {
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Real-time control over headlines, hero messaging, agency philosophy, and contact details displayed on the public marketplace.
+            Real-time control over headlines, hero messaging, footer cards, copyright text, and social media links (Facebook, Instagram, YouTube, TikTok).
           </p>
         </div>
 
@@ -95,7 +110,7 @@ export const WebsiteEditor: React.FC = () => {
             className="px-3.5 sm:px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <ExternalLink className="w-3.5 h-3.5 text-amber-600" />
-            <span>View Site</span>
+            <span>View Live Site</span>
           </button>
 
           <button
@@ -114,7 +129,7 @@ export const WebsiteEditor: React.FC = () => {
         <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between shadow-xs animate-in fade-in">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <span className="font-semibold">Public website text changes saved successfully and live on marketplace!</span>
+            <span className="font-semibold">Public website copy & social media links saved successfully and live on marketplace!</span>
           </div>
           <button
             onClick={() => setInterface('public')}
@@ -131,8 +146,9 @@ export const WebsiteEditor: React.FC = () => {
           { id: 'hero', label: 'Hero & Banner', icon: Sparkles },
           { id: 'about', label: 'About & Philosophy', icon: Building },
           { id: 'contact', label: 'Contact Us & Hours', icon: Phone },
-          { id: 'features', label: 'Advisory Pillars', icon: Award },
-          { id: 'footer', label: 'Footer & Disclaimer', icon: Globe },
+          { id: 'features', label: 'Footer 3 Cards', icon: Award },
+          { id: 'social', label: 'Social Media Links', icon: Share2 },
+          { id: 'footer', label: 'Footer & Copyright', icon: Globe },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeSection === tab.id;
@@ -346,101 +362,263 @@ export const WebsiteEditor: React.FC = () => {
           </div>
         )}
 
-        {/* SECTION: ADVISORY PILLARS */}
+        {/* SECTION: 3 FOOTER CARDS (ADVISORY PILLARS) */}
         {activeSection === 'features' && (
           <div className="space-y-6 animate-in fade-in duration-150">
             <div className="border-b border-slate-100 pb-3">
-              <h2 className="text-base font-bold font-serif text-slate-900">Advisory Guarantee Highlights</h2>
-              <p className="text-xs text-slate-500">The 3 feature cards displayed above the website footer.</p>
+              <h2 className="text-base font-bold font-serif text-slate-900">Footer 3 Cards (Advisory Pillars)</h2>
+              <p className="text-xs text-slate-500">Edit the headings and descriptive text for each of the three cards displayed in the footer above copyright.</p>
             </div>
 
-            {/* Pillar 1 */}
-            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-                <Award className="w-4 h-4 text-amber-500" />
-                <span>Pillar 1: Quality & Selection</span>
+            {/* Card 1 */}
+            <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                  <Award className="w-4 h-4 text-amber-500" />
+                  <span>Card 1: Selection & Portfolio Guarantee</span>
+                </div>
+                <span className="text-[11px] text-slate-400 font-mono">Pillar 1</span>
+              </div>
+              
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">Card 1 Heading</label>
+                <input
+                  type="text"
+                  value={formData.feature1Title}
+                  onChange={(e) => handleChange('feature1Title', e.target.value)}
+                  placeholder="Curated Luxury Portfolio"
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-slate-900 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">Card 1 Description Text</label>
+                <textarea
+                  rows={3}
+                  value={formData.feature1Desc}
+                  onChange={(e) => handleChange('feature1Desc', e.target.value)}
+                  placeholder="Every residence in our portfolio undergoes a rigorous architectural evaluation and verified title audit before public curation."
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-slate-900 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Card 2 */}
+            <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                  <ShieldCheck className="w-4 h-4 text-indigo-500" />
+                  <span>Card 2: Fiduciary & Broker Governance</span>
+                </div>
+                <span className="text-[11px] text-slate-400 font-mono">Pillar 2</span>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">Card 2 Heading</label>
+                <input
+                  type="text"
+                  value={formData.feature2Title}
+                  onChange={(e) => handleChange('feature2Title', e.target.value)}
+                  placeholder="Fiduciary Advisory"
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-slate-900 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">Card 2 Description Text</label>
+                <textarea
+                  rows={3}
+                  value={formData.feature2Desc}
+                  onChange={(e) => handleChange('feature2Desc', e.target.value)}
+                  placeholder="Our licensed superadmin brokers and luxury advisors protect your interests across valuation, negotiation, and escrow closing."
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-slate-900 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Card 3 */}
+            <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                  <Globe className="w-4 h-4 text-emerald-500" />
+                  <span>Card 3: 4K Tours & VIP Concierge</span>
+                </div>
+                <span className="text-[11px] text-slate-400 font-mono">Pillar 3</span>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">Card 3 Heading</label>
+                <input
+                  type="text"
+                  value={formData.feature3Title}
+                  onChange={(e) => handleChange('feature3Title', e.target.value)}
+                  placeholder="4K Virtual & VIP Tours"
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-slate-900 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">Card 3 Description Text</label>
+                <textarea
+                  rows={3}
+                  value={formData.feature3Desc}
+                  onChange={(e) => handleChange('feature3Desc', e.target.value)}
+                  placeholder="Experience high-definition live video walkthroughs or book private chauffeur-accompanied estate visits on your schedule."
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-slate-900 focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SECTION: SOCIAL MEDIA LINKS (Facebook, Instagram, YouTube, TikTok only) */}
+        {activeSection === 'social' && (
+          <div className="space-y-6 animate-in fade-in duration-150">
+            <div className="border-b border-slate-100 pb-3">
+              <h2 className="text-base font-bold font-serif text-slate-900">Social Media Links (Facebook, Instagram, YouTube, TikTok)</h2>
+              <p className="text-xs text-slate-500">Configure your official social media profile URLs. Small, clean icons will appear in the footer.</p>
+            </div>
+
+            {/* Facebook */}
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center">
+                  <Facebook className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-slate-900">Facebook Page URL</span>
+                  <span className="text-[10px] text-slate-400 ml-2">Appears in footer</span>
+                </div>
               </div>
               <input
-                type="text"
-                value={formData.feature1Title}
-                onChange={(e) => handleChange('feature1Title', e.target.value)}
-                placeholder="Title"
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold"
-              />
-              <textarea
-                rows={2}
-                value={formData.feature1Desc}
-                onChange={(e) => handleChange('feature1Desc', e.target.value)}
-                placeholder="Description"
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium"
+                type="url"
+                value={formData.socialFacebook}
+                onChange={(e) => handleChange('socialFacebook', e.target.value)}
+                placeholder="https://facebook.com/bightrealestate"
+                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-600 focus:outline-none"
               />
             </div>
 
-            {/* Pillar 2 */}
-            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-                <ShieldCheck className="w-4 h-4 text-indigo-500" />
-                <span>Pillar 2: Fiduciary Governance</span>
+            {/* Instagram */}
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white flex items-center justify-center">
+                  <Instagram className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-slate-900">Instagram Profile URL</span>
+                  <span className="text-[10px] text-slate-400 ml-2">Appears in footer</span>
+                </div>
               </div>
               <input
-                type="text"
-                value={formData.feature2Title}
-                onChange={(e) => handleChange('feature2Title', e.target.value)}
-                placeholder="Title"
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold"
-              />
-              <textarea
-                rows={2}
-                value={formData.feature2Desc}
-                onChange={(e) => handleChange('feature2Desc', e.target.value)}
-                placeholder="Description"
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium"
+                type="url"
+                value={formData.socialInstagram}
+                onChange={(e) => handleChange('socialInstagram', e.target.value)}
+                placeholder="https://instagram.com/bightrealestate"
+                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-rose-500 focus:outline-none"
               />
             </div>
 
-            {/* Pillar 3 */}
-            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-                <Globe className="w-4 h-4 text-emerald-500" />
-                <span>Pillar 3: Experience & VIP Tours</span>
+            {/* YouTube */}
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-rose-600 text-white flex items-center justify-center">
+                  <Youtube className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-slate-900">YouTube Channel URL</span>
+                  <span className="text-[10px] text-slate-400 ml-2">Appears in footer</span>
+                </div>
               </div>
               <input
-                type="text"
-                value={formData.feature3Title}
-                onChange={(e) => handleChange('feature3Title', e.target.value)}
-                placeholder="Title"
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold"
+                type="url"
+                value={formData.socialYoutube}
+                onChange={(e) => handleChange('socialYoutube', e.target.value)}
+                placeholder="https://youtube.com/@bightrealestate"
+                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-rose-600 focus:outline-none"
               />
-              <textarea
-                rows={2}
-                value={formData.feature3Desc}
-                onChange={(e) => handleChange('feature3Desc', e.target.value)}
-                placeholder="Description"
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium"
+            </div>
+
+            {/* TikTok */}
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-slate-900 text-cyan-400 flex items-center justify-center">
+                  <TikTokIcon className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-slate-900">TikTok Profile URL</span>
+                  <span className="text-[10px] text-slate-400 ml-2">Appears in footer</span>
+                </div>
+              </div>
+              <input
+                type="url"
+                value={formData.socialTiktok}
+                onChange={(e) => handleChange('socialTiktok', e.target.value)}
+                placeholder="https://tiktok.com/@bightrealestate"
+                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-cyan-500 focus:outline-none"
               />
             </div>
           </div>
         )}
 
-        {/* SECTION: FOOTER & LEGAL */}
+        {/* SECTION: FOOTER & COPYRIGHT */}
         {activeSection === 'footer' && (
-          <div className="space-y-5 animate-in fade-in duration-150">
+          <div className="space-y-6 animate-in fade-in duration-150">
             <div className="border-b border-slate-100 pb-3">
-              <h2 className="text-base font-bold font-serif text-slate-900">Footer Text & License Statement</h2>
-              <p className="text-xs text-slate-500">Displayed at the bottom of every public view page.</p>
+              <h2 className="text-base font-bold font-serif text-slate-900">Footer Text & Copyright Statement</h2>
+              <p className="text-xs text-slate-500">Displayed in the bottom bar of every public marketplace page.</p>
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Footer Copyright & License Notice
+                Footer Copyright Text
               </label>
-              <textarea
-                rows={3}
+              <input
+                type="text"
                 value={formData.footerText}
                 onChange={(e) => handleChange('footerText', e.target.value)}
-                placeholder="© Bight Real Estate Inc. • Broker License #PK-RE-019284 • Equal Housing Opportunity."
+                placeholder="© 2026 Bight Real Estate."
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-slate-900 focus:bg-white"
               />
+              <p className="text-[11px] text-slate-400 mt-1.5">
+                Preset standard: <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-600">© 2026 Bight Real Estate.</code>
+              </p>
+            </div>
+
+            {/* Quick Links to Socials */}
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <Share2 className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Linked Social Channels in Footer</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setActiveSection('social')}
+                  className="text-[11px] text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer"
+                >
+                  Manage Social Media Tab →
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="flex items-center gap-2 bg-white p-2.5 rounded-xl border border-slate-200">
+                  <Facebook className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span className="truncate text-slate-600 font-mono text-[11px]">{formData.socialFacebook || 'Not set'}</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white p-2.5 rounded-xl border border-slate-200">
+                  <Instagram className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span className="truncate text-slate-600 font-mono text-[11px]">{formData.socialInstagram || 'Not set'}</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white p-2.5 rounded-xl border border-slate-200">
+                  <Youtube className="w-4 h-4 text-red-600 shrink-0" />
+                  <span className="truncate text-slate-600 font-mono text-[11px]">{formData.socialYoutube || 'Not set'}</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white p-2.5 rounded-xl border border-slate-200">
+                  <TikTokIcon className="w-4 h-4 text-slate-900 shrink-0" />
+                  <span className="truncate text-slate-600 font-mono text-[11px]">{formData.socialTiktok || 'Not set'}</span>
+                </div>
+              </div>
             </div>
           </div>
         )}

@@ -203,5 +203,9 @@ export interface WebsiteContent {
   feature3Title: string;
   feature3Desc: string;
   footerText: string;
+  socialFacebook: string;
+  socialInstagram: string;
+  socialYoutube: string;
+  socialTiktok: string;
 }
 

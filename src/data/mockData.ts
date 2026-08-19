@@ -1,4 +1,4 @@
-import { Property, StaffUser, CustomerUser, LeadInquiry, AuditLog, AttendanceRecord } from '../types';
+import { Property, StaffUser, CustomerUser, LeadInquiry, AuditLog, AttendanceRecord, WebsiteContent } from '../types';
 
 export const INITIAL_STAFF: StaffUser[] = [
   {
@@ -575,7 +575,7 @@ export const ALL_AMENITIES_LIST = [
   'Dolby Atmos Private Screening Room'
 ];
 
-export const INITIAL_WEBSITE_CONTENT = {
+export const INITIAL_WEBSITE_CONTENT: WebsiteContent = {
   heroTagline: 'Curated Architectural Residences & Estates',
   heroHeading: 'Discover Exceptional Homes Tailored to Your Life',
   heroSubheading: 'Browse our exclusive portfolio of luxury residences, penthouses, and private estates. Connect with dedicated advisory partners for VIP tours.',
@@ -594,7 +594,11 @@ export const INITIAL_WEBSITE_CONTENT = {
   feature2Desc: 'Our licensed superadmin brokers and luxury advisors protect your interests across valuation, negotiation, and escrow closing.',
   feature3Title: '4K Virtual & VIP Tours',
   feature3Desc: 'Experience high-definition live video walkthroughs or book private chauffeur-accompanied estate visits on your schedule.',
-  footerText: '© Bight Real Estate Inc. • Broker License #PK-RE-019284 • Equal Housing Opportunity.',
+  footerText: '© 2026 Bight Real Estate.',
+  socialFacebook: 'https://facebook.com/bightrealestate',
+  socialInstagram: 'https://instagram.com/bightrealestate',
+  socialYoutube: 'https://youtube.com/@bightrealestate',
+  socialTiktok: 'https://tiktok.com/@bightrealestate',
 };
 
 // Helper for generating relative dates (YYYY-MM-DD)
