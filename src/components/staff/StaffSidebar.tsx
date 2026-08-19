@@ -16,7 +16,8 @@ import {
   Crown,
   KeyRound,
   Settings,
-  X
+  X,
+  Clock
 } from 'lucide-react';
 
 interface StaffSidebarProps {
@@ -61,6 +62,7 @@ export const StaffSidebar: React.FC<StaffSidebarProps> = ({ isMobileOpen, onClos
 
   const navigationItems = [
     { id: 'dashboard', label: 'Overview Dashboard', icon: LayoutDashboard },
+    { id: 'attendance', label: 'Attendance & Time Clock', icon: Clock },
     { id: 'listings', label: 'Listings Portfolio', icon: Home },
     { 
       id: 'leads', 

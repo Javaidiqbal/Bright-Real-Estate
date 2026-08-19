@@ -1,23 +1,27 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { 
-  Property, 
-  StaffUser, 
+import {
+  Property,
+  StaffUser,
   CustomerUser,
-  LeadInquiry, 
-  AuditLog, 
-  UserRole, 
-  LeadStatus, 
+  LeadInquiry,
+  AuditLog,
+  UserRole,
+  LeadStatus,
   PropertyStatus,
   AuthUser,
-  WebsiteContent
+  WebsiteContent,
+  AttendanceRecord,
+  AttendanceBreak,
+  AttendanceStatus
 } from '../types';
-import { 
-  INITIAL_PROPERTIES, 
-  INITIAL_STAFF, 
+import {
+  INITIAL_PROPERTIES,
+  INITIAL_STAFF,
   INITIAL_CUSTOMERS,
-  INITIAL_LEADS, 
+  INITIAL_LEADS,
   INITIAL_AUDIT_LOGS,
-  INITIAL_WEBSITE_CONTENT
+  INITIAL_WEBSITE_CONTENT,
+  INITIAL_ATTENDANCE
 } from '../data/mockData';
 
 export const SUPERADMIN_EMAIL = 'ijavaid91@gmail.com';
@@ -63,7 +67,7 @@ interface AppContextType {
   currentStaffUser: StaffUser | null;
   staffList: StaffUser[];
   customerList: CustomerUser[];
-  
+
   // Properties State & Actions
   properties: Property[];
   favorites: string[];
@@ -73,7 +77,7 @@ interface AppContextType {
   deleteProperty: (propertyId: string) => void;
   approveProperty: (propertyId: string) => void;
   incrementPropertyViews: (propertyId: string) => void;
-  
+
   // Leads & Inquiries CRM
   leads: LeadInquiry[];
   myPublicInquiries: LeadInquiry[];
@@ -117,11 +121,22 @@ interface AppContextType {
   auditLogs: AuditLog[];
   addAuditLog: (actionType: AuditLog['actionType'], description: string, targetId?: string) => void;
 
+  // Attendance System
+  attendanceRecords: AttendanceRecord[];
+  todayAttendanceRecord: AttendanceRecord | undefined;
+  clockIn: (notes?: string) => { success: boolean; record?: AttendanceRecord; error?: string };
+  clockOut: (notes?: string) => { success: boolean; record?: AttendanceRecord; error?: string };
+  startBreak: (note?: string) => { success: boolean; error?: string };
+  endBreak: () => { success: boolean; error?: string };
+  addAttendanceRecord: (record: Omit<AttendanceRecord, 'id' | 'createdAt' | 'updatedAt'>) => { success: boolean; record?: AttendanceRecord; error?: string };
+  updateAttendanceRecord: (recordId: string, updates: Partial<AttendanceRecord>, reason?: string) => { success: boolean; error?: string };
+  deleteAttendanceRecord: (recordId: string) => { success: boolean; error?: string };
+
   // Utilities & Modals
   selectedPropertyForDetail: Property | null;
   setSelectedPropertyForDetail: (property: Property | null) => void;
-  activeStaffTab: 'dashboard' | 'listings' | 'leads' | 'calendar' | 'team' | 'customers' | 'website_editor' | 'analytics' | 'audit';
-  setActiveStaffTab: (tab: 'dashboard' | 'listings' | 'leads' | 'calendar' | 'team' | 'customers' | 'website_editor' | 'analytics' | 'audit') => void;
+  activeStaffTab: 'dashboard' | 'listings' | 'leads' | 'calendar' | 'team' | 'customers' | 'website_editor' | 'analytics' | 'audit' | 'attendance';
+  setActiveStaffTab: (tab: 'dashboard' | 'listings' | 'leads' | 'calendar' | 'team' | 'customers' | 'website_editor' | 'analytics' | 'audit' | 'attendance') => void;
 
   // Website Content CMS (Superadmin editable)
   websiteContent: WebsiteContent;
@@ -142,6 +157,7 @@ const STORAGE_KEYS = {
   MY_INQUIRIES: 'bight_my_inquiries_v2',
   CURRENT_UI: 'bight_current_ui_v2',
   WEBSITE_CONTENT: 'bight_website_content_v2',
+  ATTENDANCE: 'bight_attendance_v2',
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -184,14 +200,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [staffList, setStaffList] = useState<StaffUser[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.STAFF);
     if (saved) {
-      try { 
+      try {
         const parsed = JSON.parse(saved);
         // Ensure superadmin ijavaid91@gmail.com is present
         const hasIjaz = parsed.some((s: StaffUser) => s.email.toLowerCase() === SUPERADMIN_EMAIL);
         if (!hasIjaz) {
           return [INITIAL_STAFF[0], ...parsed];
         }
-        return parsed; 
+        return parsed;
       } catch (e) { console.error(e); }
     }
     return INITIAL_STAFF;
@@ -200,8 +216,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [customerList, setCustomerList] = useState<CustomerUser[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.CUSTOMERS);
     if (saved) {
-      try { 
-        return JSON.parse(saved); 
+      try {
+        return JSON.parse(saved);
       } catch (e) { console.error(e); }
     }
     return INITIAL_CUSTOMERS;
@@ -254,7 +270,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [selectedPropertyForDetail, setSelectedPropertyForDetail] = useState<Property | null>(null);
-  const [activeStaffTab, setActiveStaffTab] = useState<'dashboard' | 'listings' | 'leads' | 'calendar' | 'team' | 'customers' | 'website_editor' | 'analytics' | 'audit'>('dashboard');
+  const [activeStaffTab, setActiveStaffTab] = useState<'dashboard' | 'listings' | 'leads' | 'calendar' | 'team' | 'customers' | 'website_editor' | 'analytics' | 'audit' | 'attendance'>('dashboard');
+
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.ATTENDANCE);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+    }
+    return INITIAL_ATTENDANCE;
+  });
 
   const [websiteContent, setWebsiteContent] = useState<WebsiteContent>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.WEBSITE_CONTENT);
@@ -281,6 +305,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
     }
   }, [currentUser]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.ATTENDANCE, JSON.stringify(attendanceRecords));
+  }, [attendanceRecords]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.CURRENT_UI, currentInterface);
@@ -495,10 +523,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Sign up handler
   const signup = async (
-    name: string, 
-    email: string, 
-    rolePreference: 'client' | 'admin' = 'client', 
-    phone?: string, 
+    name: string,
+    email: string,
+    rolePreference: 'client' | 'admin' = 'client',
+    phone?: string,
     password?: string
   ): Promise<{ success: boolean; user?: AuthUser; error?: string }> => {
     const normalizedEmail = email.trim().toLowerCase();
@@ -521,9 +549,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       name: name.trim(),
       email: normalizedEmail,
       role: role,
-      avatar: role === 'superadmin' 
+      avatar: role === 'superadmin'
         ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
-        : role === 'admin' 
+        : role === 'admin'
           ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80'
           : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80',
       phone: phone.trim(),
@@ -598,7 +626,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Send Email Authorization Code
   const sendEmailAuthorizationCode = async (
-    email: string, 
+    email: string,
     purpose: 'signup' | 'password_change' | 'password_recovery'
   ): Promise<{ success: boolean; code: string; error?: string }> => {
     const cleanEmail = email.trim().toLowerCase();
@@ -627,8 +655,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Verify Email Authorization Code
   const verifyEmailAuthorizationCode = (
-    email: string, 
-    code: string, 
+    email: string,
+    code: string,
     purpose: 'signup' | 'password_change' | 'password_recovery'
   ): { success: boolean; error?: string } => {
     const cleanEmail = email.trim().toLowerCase();
@@ -636,23 +664,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const entry = activeVerificationCodes[key];
 
     if (!entry) {
-      return { 
-        success: false, 
-        error: 'No active authorization code found for this email. Please request a new code.' 
+      return {
+        success: false,
+        error: 'No active authorization code found for this email. Please request a new code.'
       };
     }
 
     if (Date.now() > entry.expiresAt) {
-      return { 
-        success: false, 
-        error: 'The authorization code has expired. Please request a new code.' 
+      return {
+        success: false,
+        error: 'The authorization code has expired. Please request a new code.'
       };
     }
 
     if (entry.code !== code.trim()) {
-      return { 
-        success: false, 
-        error: 'Incorrect authorization code. Please verify the 6-digit code sent to your email.' 
+      return {
+        success: false,
+        error: 'Incorrect authorization code. Please verify the 6-digit code sent to your email.'
       };
     }
 
@@ -691,8 +719,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const customerMatch = customerList.find(c => c.email.toLowerCase() === cleanEmail);
     const phoneDigits = staffMatch ? normalizePhoneNumber(staffMatch.phone) : customerMatch ? normalizePhoneNumber(customerMatch.phone) : undefined;
 
-    const updatedPasswords = { 
-      ...userPasswords, 
+    const updatedPasswords = {
+      ...userPasswords,
       [cleanEmail]: newPassword,
       ...(phoneDigits ? { [phoneDigits]: newPassword } : {})
     };
@@ -710,7 +738,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Change Password
   const changePassword = async (
-    currentPassword: string, 
+    currentPassword: string,
     newPassword: string,
     authorizationCode?: string
   ): Promise<{ success: boolean; error?: string }> => {
@@ -743,8 +771,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const phoneDigits = currentUser.phone ? normalizePhoneNumber(currentUser.phone) : undefined;
-    const updatedPasswords = { 
-      ...userPasswords, 
+    const updatedPasswords = {
+      ...userPasswords,
       [emailKey]: newPassword,
       ...(phoneDigits ? { [phoneDigits]: newPassword } : {})
     };
@@ -898,8 +926,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       propertyTaxAnnual: propertyData.propertyTaxAnnual || Math.round((propertyData.price || 15000000) * 0.009),
       status: propertyData.status || 'draft',
       featured: propertyData.featured || false,
-      images: propertyData.images && propertyData.images.length > 0 
-        ? propertyData.images 
+      images: propertyData.images && propertyData.images.length > 0
+        ? propertyData.images
         : ['https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1400&q=80'],
       amenities: propertyData.amenities || ['Smart Home Automation', 'Custom Chef Kitchen', 'Secured Parking'],
       assignedAgentId: propertyData.assignedAgentId || (currentStaffUser?.id || 'staff-1'),
@@ -971,7 +999,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     addAuditLog(
-      'lead_updated', 
+      'lead_updated',
       `New ${data.leadType === 'tour_booking' ? 'Tour Booking Request' : 'Client Inquiry'} from ${data.clientName} (${data.clientEmail})`,
       newLead.id
     );
@@ -1079,8 +1107,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setStaffList(prev => prev.map(s => {
       if (s.id === staffId) {
-        return { 
-          ...s, 
+        return {
+          ...s,
           ...updates,
           name: updates.name?.trim() || s.name,
           email: updates.email?.trim().toLowerCase() || s.email,
@@ -1198,8 +1226,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setCustomerList(prev => prev.map(c => {
       if (c.id === customerId) {
-        return { 
-          ...c, 
+        return {
+          ...c,
           ...updates,
           name: updates.name?.trim() || c.name,
           email: updates.email?.trim().toLowerCase() || c.email,
@@ -1240,6 +1268,415 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return c;
     }));
     addAuditLog('system_settings', `Toggled customer active status for ID: ${customerId}`, customerId);
+  };
+
+  // Attendance System Logic
+  const todayAttendanceRecord = React.useMemo(() => {
+    if (!currentUser) return undefined;
+    const todayStr = new Date().toISOString().split('T')[0];
+    return attendanceRecords.find(r => 
+      r.date === todayStr && 
+      (r.userId === currentUser.id || r.userEmail.toLowerCase() === currentUser.email.toLowerCase())
+    );
+  }, [currentUser, attendanceRecords]);
+
+  const clockIn = (notes?: string): { success: boolean; record?: AttendanceRecord; error?: string } => {
+    if (!currentUser) {
+      return { success: false, error: 'You must be signed in to clock in.' };
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const nowIso = new Date().toISOString();
+
+    const existing = attendanceRecords.find(r => 
+      r.date === todayStr && 
+      (r.userId === currentUser.id || r.userEmail.toLowerCase() === currentUser.email.toLowerCase())
+    );
+
+    if (existing && existing.clockIn && !existing.clockOut) {
+      return { success: false, error: 'You have already clocked in for today.' };
+    }
+
+    const now = new Date();
+    // Flag late if clock-in is after 9:30 AM
+    const isLate = now.getHours() > 9 || (now.getHours() === 9 && now.getMinutes() > 30);
+    const initialStatus: AttendanceStatus = isLate ? 'late' : 'present';
+
+    if (existing) {
+      const updated: AttendanceRecord = {
+        ...existing,
+        clockIn: nowIso,
+        clockOut: undefined,
+        status: existing.status === 'on_leave' || existing.status === 'half_day' ? existing.status : initialStatus,
+        notes: notes ? (existing.notes ? `${existing.notes} | ${notes}` : notes) : existing.notes,
+        updatedAt: nowIso
+      };
+      setAttendanceRecords(prev => prev.map(r => r.id === existing.id ? updated : r));
+      addAuditLog('attendance_updated', `${currentUser.name} (${currentUser.role}) clocked in for shift at ${now.toLocaleTimeString()}`, updated.id);
+      return { success: true, record: updated };
+    }
+
+    const newRecord: AttendanceRecord = {
+      id: `att-${Date.now()}`,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      userEmail: currentUser.email.toLowerCase(),
+      userRole: currentUser.role,
+      userAvatar: currentUser.avatar,
+      userTitle: currentUser.title || (currentUser.role === 'superadmin' ? 'Managing Principal & Broker' : 'Real Estate Advisor'),
+      date: todayStr,
+      clockIn: nowIso,
+      breaks: [],
+      totalWorkMinutes: 0,
+      totalBreakMinutes: 0,
+      netWorkMinutes: 0,
+      status: initialStatus,
+      notes: notes || '',
+      createdAt: nowIso,
+      updatedAt: nowIso
+    };
+
+    setAttendanceRecords(prev => [newRecord, ...prev]);
+    addAuditLog('attendance_updated', `${currentUser.name} (${currentUser.role}) clocked in for today (${todayStr})`, newRecord.id);
+    return { success: true, record: newRecord };
+  };
+
+  const clockOut = (notes?: string): { success: boolean; record?: AttendanceRecord; error?: string } => {
+    if (!currentUser) {
+      return { success: false, error: 'You must be signed in to clock out.' };
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const nowIso = new Date().toISOString();
+
+    const target = attendanceRecords.find(r => 
+      r.date === todayStr && 
+      (r.userId === currentUser.id || r.userEmail.toLowerCase() === currentUser.email.toLowerCase())
+    );
+
+    if (!target || !target.clockIn) {
+      return { success: false, error: 'No active clock-in found for today. Please clock in first.' };
+    }
+
+    if (target.clockOut) {
+      return { success: false, error: 'You have already clocked out for today.' };
+    }
+
+    // Automatically close open break if currently on break
+    let updatedBreaks = [...target.breaks];
+    const openBreakIndex = updatedBreaks.findIndex(b => !b.endTime);
+    if (openBreakIndex !== -1) {
+      const openBreak = updatedBreaks[openBreakIndex];
+      const startMs = new Date(openBreak.startTime).getTime();
+      const endMs = new Date(nowIso).getTime();
+      const dur = Math.max(1, Math.round((endMs - startMs) / 60000));
+      updatedBreaks[openBreakIndex] = {
+        ...openBreak,
+        endTime: nowIso,
+        durationMinutes: dur
+      };
+    }
+
+    const startWorkMs = new Date(target.clockIn).getTime();
+    const endWorkMs = new Date(nowIso).getTime();
+    const totalWorkMinutes = Math.max(0, Math.round((endWorkMs - startWorkMs) / 60000));
+    const totalBreakMinutes = updatedBreaks.reduce((acc, b) => acc + (b.durationMinutes || 0), 0);
+    const netWorkMinutes = Math.max(0, totalWorkMinutes - totalBreakMinutes);
+
+    const updated: AttendanceRecord = {
+      ...target,
+      clockOut: nowIso,
+      breaks: updatedBreaks,
+      totalWorkMinutes,
+      totalBreakMinutes,
+      netWorkMinutes,
+      notes: notes ? (target.notes ? `${target.notes} | Clock Out: ${notes}` : notes) : target.notes,
+      updatedAt: nowIso
+    };
+
+    setAttendanceRecords(prev => prev.map(r => r.id === target.id ? updated : r));
+    addAuditLog('attendance_updated', `${currentUser.name} (${currentUser.role}) clocked out (${Math.floor(netWorkMinutes / 60)}h ${netWorkMinutes % 60}m productive time)`, target.id);
+    return { success: true, record: updated };
+  };
+
+  const startBreak = (note?: string): { success: boolean; error?: string } => {
+    if (!currentUser) {
+      return { success: false, error: 'You must be signed in to start a break.' };
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const nowIso = new Date().toISOString();
+
+    const target = attendanceRecords.find(r => 
+      r.date === todayStr && 
+      (r.userId === currentUser.id || r.userEmail.toLowerCase() === currentUser.email.toLowerCase())
+    );
+
+    if (!target || !target.clockIn) {
+      return { success: false, error: 'You must clock in before starting a break.' };
+    }
+
+    if (target.clockOut) {
+      return { success: false, error: 'You cannot take a break after clocking out.' };
+    }
+
+    const hasOpenBreak = target.breaks.some(b => !b.endTime);
+    if (hasOpenBreak) {
+      return { success: false, error: 'You are already on an active break. Please end the current break first.' };
+    }
+
+    // MAXIMUM 2 BREAKS PER DAY RULE
+    if (target.breaks.length >= 2) {
+      return { success: false, error: 'Maximum limit reached: You are allowed a maximum of 2 breaks per day.' };
+    }
+
+    const breakNumber = (target.breaks.length + 1) as 1 | 2;
+    const defaultLabel = breakNumber === 1 ? 'Meal / Lunch Break' : 'Tea / Coffee Break';
+
+    const newBreak: AttendanceBreak = {
+      id: `brk-${Date.now()}`,
+      breakNumber,
+      startTime: nowIso,
+      note: note?.trim() || defaultLabel
+    };
+
+    const updated: AttendanceRecord = {
+      ...target,
+      breaks: [...target.breaks, newBreak],
+      updatedAt: nowIso
+    };
+
+    setAttendanceRecords(prev => prev.map(r => r.id === target.id ? updated : r));
+    addAuditLog('attendance_updated', `${currentUser.name} started Break #${breakNumber} (${newBreak.note})`, target.id);
+    return { success: true };
+  };
+
+  const endBreak = (): { success: boolean; error?: string } => {
+    if (!currentUser) {
+      return { success: false, error: 'You must be signed in to end a break.' };
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const nowIso = new Date().toISOString();
+
+    const target = attendanceRecords.find(r => 
+      r.date === todayStr && 
+      (r.userId === currentUser.id || r.userEmail.toLowerCase() === currentUser.email.toLowerCase())
+    );
+
+    if (!target) {
+      return { success: false, error: 'Attendance record for today not found.' };
+    }
+
+    const openBreakIndex = target.breaks.findIndex(b => !b.endTime);
+    if (openBreakIndex === -1) {
+      return { success: false, error: 'No active break is currently in progress.' };
+    }
+
+    const openBreak = target.breaks[openBreakIndex];
+    const startMs = new Date(openBreak.startTime).getTime();
+    const endMs = new Date(nowIso).getTime();
+    const durationMinutes = Math.max(1, Math.round((endMs - startMs) / 60000));
+
+    const updatedBreaks = [...target.breaks];
+    updatedBreaks[openBreakIndex] = {
+      ...openBreak,
+      endTime: nowIso,
+      durationMinutes
+    };
+
+    const totalBreakMinutes = updatedBreaks.reduce((acc, b) => acc + (b.durationMinutes || 0), 0);
+    
+    let totalWorkMinutes = target.totalWorkMinutes || 0;
+    let netWorkMinutes = target.netWorkMinutes || 0;
+    if (target.clockIn) {
+      const workEndTime = target.clockOut ? new Date(target.clockOut).getTime() : Date.now();
+      totalWorkMinutes = Math.max(0, Math.round((workEndTime - new Date(target.clockIn).getTime()) / 60000));
+      netWorkMinutes = Math.max(0, totalWorkMinutes - totalBreakMinutes);
+    }
+
+    const updated: AttendanceRecord = {
+      ...target,
+      breaks: updatedBreaks,
+      totalBreakMinutes,
+      totalWorkMinutes,
+      netWorkMinutes,
+      updatedAt: nowIso
+    };
+
+    setAttendanceRecords(prev => prev.map(r => r.id === target.id ? updated : r));
+    addAuditLog('attendance_updated', `${currentUser.name} ended Break #${openBreak.breakNumber} (Duration: ${durationMinutes} mins)`, target.id);
+    return { success: true };
+  };
+
+  const updateAttendanceRecord = (recordId: string, updates: Partial<AttendanceRecord>, reason?: string): { success: boolean; error?: string } => {
+    if (!currentUser) {
+      return { success: false, error: 'Authentication required.' };
+    }
+
+    const target = attendanceRecords.find(r => r.id === recordId);
+    if (!target) {
+      return { success: false, error: 'Attendance record not found.' };
+    }
+
+    const isSuperadmin = currentUser.role === 'superadmin' || currentUser.email.toLowerCase() === SUPERADMIN_EMAIL.toLowerCase();
+    const isAdmin = currentUser.role === 'admin';
+
+    if (!isSuperadmin && !isAdmin) {
+      return { success: false, error: 'Permission denied: Only Admins and Superadmins can modify attendance records.' };
+    }
+
+    // STRICT BUSINESS RULE:
+    // Admins can add and edit employees' attendance but CANNOT edit their own attendance.
+    // Super admin has complete access.
+    if (isAdmin && !isSuperadmin) {
+      const isOwnRecord = target.userId === currentUser.id || target.userEmail.toLowerCase() === currentUser.email.toLowerCase();
+      if (isOwnRecord) {
+        return { 
+          success: false, 
+          error: 'Security Policy: Admins cannot edit their own attendance records. Please contact the Superadmin for adjustments.' 
+        };
+      }
+    }
+
+    // Maximum 2 breaks validation
+    if (updates.breaks && updates.breaks.length > 2) {
+      return { success: false, error: 'Strict Constraint: A maximum of 2 breaks are permitted per attendance record.' };
+    }
+
+    let breaksToSave = updates.breaks !== undefined ? updates.breaks : target.breaks;
+    breaksToSave = breaksToSave.map(b => {
+      if (b.startTime && b.endTime && (!b.durationMinutes || b.durationMinutes <= 0)) {
+        const dur = Math.max(1, Math.round((new Date(b.endTime).getTime() - new Date(b.startTime).getTime()) / 60000));
+        return { ...b, durationMinutes: dur };
+      }
+      return b;
+    });
+
+    const clockInVal = updates.clockIn !== undefined ? updates.clockIn : target.clockIn;
+    const clockOutVal = updates.clockOut !== undefined ? updates.clockOut : target.clockOut;
+
+    const totalBreakMinutes = breaksToSave.reduce((acc, b) => acc + (b.durationMinutes || 0), 0);
+    let totalWorkMinutes = updates.totalWorkMinutes !== undefined ? updates.totalWorkMinutes : target.totalWorkMinutes;
+    
+    if (clockInVal && clockOutVal) {
+      const inMs = new Date(clockInVal).getTime();
+      const outMs = new Date(clockOutVal).getTime();
+      if (!isNaN(inMs) && !isNaN(outMs)) {
+        totalWorkMinutes = Math.max(0, Math.round((outMs - inMs) / 60000));
+      }
+    }
+
+    const netWorkMinutes = Math.max(0, totalWorkMinutes - totalBreakMinutes);
+
+    const nowIso = new Date().toISOString();
+    const updated: AttendanceRecord = {
+      ...target,
+      ...updates,
+      breaks: breaksToSave,
+      totalBreakMinutes,
+      totalWorkMinutes,
+      netWorkMinutes,
+      editedBy: {
+        userId: currentUser.id,
+        userName: currentUser.name,
+        userRole: currentUser.role,
+        timestamp: nowIso,
+        reason: reason || 'Administrative adjustment'
+      },
+      updatedAt: nowIso
+    };
+
+    setAttendanceRecords(prev => prev.map(r => r.id === recordId ? updated : r));
+    addAuditLog('attendance_updated', `${currentUser.name} (${currentUser.role}) updated attendance record for ${target.userName} on ${target.date}. Reason: ${reason || 'Admin modification'}`, recordId);
+    return { success: true };
+  };
+
+  const addAttendanceRecord = (recordData: Omit<AttendanceRecord, 'id' | 'createdAt' | 'updatedAt'>): { success: boolean; record?: AttendanceRecord; error?: string } => {
+    if (!currentUser) {
+      return { success: false, error: 'Authentication required.' };
+    }
+
+    const isSuperadmin = currentUser.role === 'superadmin' || currentUser.email.toLowerCase() === SUPERADMIN_EMAIL.toLowerCase();
+    const isAdmin = currentUser.role === 'admin';
+
+    if (!isSuperadmin && !isAdmin) {
+      return { success: false, error: 'Permission denied: Only Admins and Superadmins can manually add attendance records.' };
+    }
+
+    if (isAdmin && !isSuperadmin) {
+      const isOwn = recordData.userId === currentUser.id || recordData.userEmail.toLowerCase() === currentUser.email.toLowerCase();
+      if (isOwn) {
+        return { success: false, error: 'Admins cannot manually insert attendance records for themselves. Please use standard Clock In/Out or contact Superadmin.' };
+      }
+    }
+
+    if (recordData.breaks && recordData.breaks.length > 2) {
+      return { success: false, error: 'A maximum of 2 breaks are permitted per shift.' };
+    }
+
+    const nowIso = new Date().toISOString();
+    const breaksToSave = (recordData.breaks || []).map((b, idx) => {
+      const bNum = (idx + 1) as 1 | 2;
+      let dur = b.durationMinutes;
+      if (b.startTime && b.endTime && (!dur || dur <= 0)) {
+        dur = Math.max(1, Math.round((new Date(b.endTime).getTime() - new Date(b.startTime).getTime()) / 60000));
+      }
+      return { ...b, breakNumber: bNum, durationMinutes: dur };
+    });
+
+    const totalBreakMinutes = breaksToSave.reduce((acc, b) => acc + (b.durationMinutes || 0), 0);
+    let totalWorkMinutes = recordData.totalWorkMinutes || 0;
+    if (recordData.clockIn && recordData.clockOut) {
+      const inMs = new Date(recordData.clockIn).getTime();
+      const outMs = new Date(recordData.clockOut).getTime();
+      if (!isNaN(inMs) && !isNaN(outMs)) {
+        totalWorkMinutes = Math.max(0, Math.round((outMs - inMs) / 60000));
+      }
+    }
+    const netWorkMinutes = Math.max(0, totalWorkMinutes - totalBreakMinutes);
+
+    const newRecord: AttendanceRecord = {
+      ...recordData,
+      id: `att-manual-${Date.now()}`,
+      breaks: breaksToSave,
+      totalBreakMinutes,
+      totalWorkMinutes,
+      netWorkMinutes,
+      editedBy: {
+        userId: currentUser.id,
+        userName: currentUser.name,
+        userRole: currentUser.role,
+        timestamp: nowIso,
+        reason: 'Manual entry by ' + currentUser.name
+      },
+      createdAt: nowIso,
+      updatedAt: nowIso
+    };
+
+    setAttendanceRecords(prev => [newRecord, ...prev]);
+    addAuditLog('attendance_created', `${currentUser.name} manually recorded attendance for ${recordData.userName} on ${recordData.date}`, newRecord.id);
+    return { success: true, record: newRecord };
+  };
+
+  const deleteAttendanceRecord = (recordId: string): { success: boolean; error?: string } => {
+    if (!currentUser) {
+      return { success: false, error: 'Authentication required.' };
+    }
+
+    const isSuperadmin = currentUser.role === 'superadmin' || currentUser.email.toLowerCase() === SUPERADMIN_EMAIL.toLowerCase();
+    if (!isSuperadmin) {
+      return { success: false, error: 'Permission denied: Only the Superadmin can delete attendance records.' };
+    }
+
+    const target = attendanceRecords.find(r => r.id === recordId);
+    if (!target) {
+      return { success: false, error: 'Attendance record not found.' };
+    }
+
+    setAttendanceRecords(prev => prev.filter(r => r.id !== recordId));
+    addAuditLog('attendance_deleted', `Superadmin deleted attendance record of ${target.userName} for date ${target.date}`, recordId);
+    return { success: true };
   };
 
   return (
@@ -1291,6 +1728,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateCustomer,
         deleteCustomer,
         toggleCustomerActive,
+        attendanceRecords,
+        todayAttendanceRecord,
+        clockIn,
+        clockOut,
+        startBreak,
+        endBreak,
+        addAttendanceRecord,
+        updateAttendanceRecord,
+        deleteAttendanceRecord,
         auditLogs,
         addAuditLog,
         selectedPropertyForDetail,

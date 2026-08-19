@@ -10,6 +10,7 @@ import { CustomerManagement } from './CustomerManagement';
 import { WebsiteEditor } from './WebsiteEditor';
 import { AnalyticsView } from './AnalyticsView';
 import { AuditLogsView } from './AuditLogsView';
+import { AttendanceManagement } from './AttendanceManagement';
 import { ListingEditorModal } from './ListingEditorModal';
 import { 
   Crown, 
@@ -25,7 +26,8 @@ import {
   Home,
   Users,
   Calendar,
-  MoreHorizontal
+  MoreHorizontal,
+  Clock
 } from 'lucide-react';
 
 export const StaffPortal: React.FC = () => {
@@ -47,6 +49,7 @@ export const StaffPortal: React.FC = () => {
 
   const tabTitles: Record<string, string> = {
     dashboard: 'Executive Dashboard',
+    attendance: 'Attendance & Time Tracking',
     listings: 'Listings Portfolio',
     leads: 'Leads & Inquiries CRM',
     customers: 'Client Database',
@@ -148,6 +151,10 @@ export const StaffPortal: React.FC = () => {
         <main className="flex-1 overflow-y-auto pb-20 lg:pb-12">
           {activeStaffTab === 'dashboard' && (
             <StaffDashboard onOpenAddListing={() => setIsCreatingNewListing(true)} />
+          )}
+
+          {activeStaffTab === 'attendance' && (
+            <AttendanceManagement />
           )}
 
           {activeStaffTab === 'listings' && (

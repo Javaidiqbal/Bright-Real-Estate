@@ -21,7 +21,8 @@ import {
   Phone,
   Menu,
   X,
-  Sparkles
+  Sparkles,
+  Clock
 } from 'lucide-react';
 
 interface PublicHeaderProps {
@@ -45,6 +46,7 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
     openAuthModal, 
     logout, 
     setInterface,
+    setActiveStaffTab,
     openAccountSettings
   } = useApp();
 
@@ -218,16 +220,30 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
                     <div className="py-1.5 space-y-0.5">
                       {/* If user is Staff or Superadmin, provide link to Staff Portal */}
                       {isStaffRole && (
-                        <button
-                          onClick={() => {
-                            setInterface('staff');
-                            setIsUserMenuOpen(false);
-                          }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 rounded-xl transition-colors text-left cursor-pointer"
-                        >
-                          <LayoutDashboard className="w-4 h-4 text-indigo-600" />
-                          <span>Enter {isSuperadmin ? 'Superadmin Portal' : 'Admin Portal'}</span>
-                        </button>
+                        <>
+                          <button
+                            onClick={() => {
+                              setInterface('staff');
+                              setIsUserMenuOpen(false);
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 rounded-xl transition-colors text-left cursor-pointer"
+                          >
+                            <LayoutDashboard className="w-4 h-4 text-indigo-600" />
+                            <span>Enter {isSuperadmin ? 'Superadmin Portal' : 'Admin Portal'}</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setActiveStaffTab('attendance');
+                              setInterface('staff');
+                              setIsUserMenuOpen(false);
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-50 rounded-xl transition-colors text-left cursor-pointer"
+                          >
+                            <Clock className="w-4 h-4 text-amber-600" />
+                            <span>Attendance & Time Clock</span>
+                          </button>
+                        </>
                       )}
 
                       <button
@@ -488,6 +504,22 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({
                     <div>
                       <div>{isSuperadmin ? 'Superadmin Executive' : 'Staff Admin Panel'}</div>
                       <div className="text-[10px] text-slate-300 font-normal lowercase tracking-normal">Switch to back-office</div>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => handleMobileNav(() => {
+                      setActiveStaffTab('attendance');
+                      setInterface('staff');
+                    })}
+                    className="w-full flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 text-amber-950 rounded-xl text-xs font-bold uppercase tracking-wider shadow-xs hover:bg-amber-100 transition-all text-left cursor-pointer"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-bold shrink-0">
+                      <Clock className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div>Attendance & Time Clock</div>
+                      <div className="text-[10px] text-amber-800 font-normal lowercase tracking-normal">Clock in, out & break tracker</div>
                     </div>
                   </button>
                 </div>

@@ -1,4 +1,4 @@
-import { Property, StaffUser, CustomerUser, LeadInquiry, AuditLog } from '../types';
+import { Property, StaffUser, CustomerUser, LeadInquiry, AuditLog, AttendanceRecord } from '../types';
 
 export const INITIAL_STAFF: StaffUser[] = [
   {
@@ -596,4 +596,271 @@ export const INITIAL_WEBSITE_CONTENT = {
   feature3Desc: 'Experience high-definition live video walkthroughs or book private chauffeur-accompanied estate visits on your schedule.',
   footerText: '© Bight Real Estate Inc. • Broker License #PK-RE-019284 • Equal Housing Opportunity.',
 };
+
+// Helper for generating relative dates (YYYY-MM-DD)
+const getFormattedDate = (offsetDays: number = 0): string => {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  return d.toISOString().split('T')[0];
+};
+
+const getIsoTime = (dateStr: string, hours: number, minutes: number): string => {
+  const d = new Date(`${dateStr}T00:00:00.000Z`);
+  d.setUTCHours(hours, minutes, 0, 0);
+  return d.toISOString();
+};
+
+export const INITIAL_ATTENDANCE: AttendanceRecord[] = [
+  // Today's attendance records
+  {
+    id: 'att-today-1',
+    userId: 'staff-1',
+    userName: 'Ijaz Javaid',
+    userEmail: 'ijavaid91@gmail.com',
+    userRole: 'superadmin',
+    userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+    userTitle: 'Managing Principal & Superadmin Broker',
+    date: getFormattedDate(0),
+    clockIn: getIsoTime(getFormattedDate(0), 8, 45),
+    clockOut: undefined,
+    breaks: [
+      {
+        id: 'brk-1-1',
+        breakNumber: 1,
+        startTime: getIsoTime(getFormattedDate(0), 12, 30),
+        endTime: getIsoTime(getFormattedDate(0), 13, 15),
+        durationMinutes: 45,
+        note: 'Lunch with VIP Investor'
+      }
+    ],
+    totalWorkMinutes: 320,
+    totalBreakMinutes: 45,
+    netWorkMinutes: 275,
+    status: 'present',
+    notes: 'Executive brokerage morning review & asset valuations.',
+    createdAt: getIsoTime(getFormattedDate(0), 8, 45),
+    updatedAt: getIsoTime(getFormattedDate(0), 13, 15)
+  },
+  {
+    id: 'att-today-2',
+    userId: 'staff-2',
+    userName: 'Marcus Chen',
+    userEmail: 'marcus.chen@bightrealestate.com',
+    userRole: 'admin',
+    userAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
+    userTitle: 'Senior Luxury Portfolio Partner',
+    date: getFormattedDate(0),
+    clockIn: getIsoTime(getFormattedDate(0), 9, 10),
+    clockOut: undefined,
+    breaks: [
+      {
+        id: 'brk-2-1',
+        breakNumber: 1,
+        startTime: getIsoTime(getFormattedDate(0), 13, 0),
+        endTime: getIsoTime(getFormattedDate(0), 13, 40),
+        durationMinutes: 40,
+        note: 'Midday Meal Break'
+      }
+    ],
+    totalWorkMinutes: 290,
+    totalBreakMinutes: 40,
+    netWorkMinutes: 250,
+    status: 'present',
+    notes: 'Hosting buyer tour at Blue Area Penthouse.',
+    createdAt: getIsoTime(getFormattedDate(0), 9, 10),
+    updatedAt: getIsoTime(getFormattedDate(0), 13, 40)
+  },
+  {
+    id: 'att-today-3',
+    userId: 'staff-3',
+    userName: 'Sarah Jenkins',
+    userEmail: 'sarah.jenkins@bightrealestate.com',
+    userRole: 'admin',
+    userAvatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=400&q=80',
+    userTitle: 'Executive Residential Advisor',
+    date: getFormattedDate(0),
+    clockIn: getIsoTime(getFormattedDate(0), 9, 45),
+    clockOut: undefined,
+    breaks: [],
+    totalWorkMinutes: 260,
+    totalBreakMinutes: 0,
+    netWorkMinutes: 260,
+    status: 'late',
+    notes: 'Delayed due to traffic on Kashmir Highway.',
+    createdAt: getIsoTime(getFormattedDate(0), 9, 45),
+    updatedAt: getIsoTime(getFormattedDate(0), 9, 45)
+  },
+  {
+    id: 'att-today-4',
+    userId: 'staff-4',
+    userName: 'David Ross',
+    userEmail: 'david.ross@bightrealestate.com',
+    userRole: 'admin',
+    userAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80',
+    userTitle: 'Listing Coordinator & Commercial Specialist',
+    date: getFormattedDate(0),
+    clockIn: getIsoTime(getFormattedDate(0), 8, 55),
+    clockOut: undefined,
+    breaks: [
+      {
+        id: 'brk-4-1',
+        breakNumber: 1,
+        startTime: getIsoTime(getFormattedDate(0), 12, 15),
+        endTime: getIsoTime(getFormattedDate(0), 12, 45),
+        durationMinutes: 30,
+        note: 'Quick Lunch'
+      },
+      {
+        id: 'brk-4-2',
+        breakNumber: 2,
+        startTime: getIsoTime(getFormattedDate(0), 15, 30),
+        endTime: getIsoTime(getFormattedDate(0), 15, 45),
+        durationMinutes: 15,
+        note: 'Afternoon Tea Break'
+      }
+    ],
+    totalWorkMinutes: 310,
+    totalBreakMinutes: 45,
+    netWorkMinutes: 265,
+    status: 'present',
+    notes: 'MLS listing coordinates & photoshoot oversight.',
+    createdAt: getIsoTime(getFormattedDate(0), 8, 55),
+    updatedAt: getIsoTime(getFormattedDate(0), 15, 45)
+  },
+
+  // Yesterday's completed records
+  {
+    id: 'att-yest-1',
+    userId: 'staff-1',
+    userName: 'Ijaz Javaid',
+    userEmail: 'ijavaid91@gmail.com',
+    userRole: 'superadmin',
+    userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+    userTitle: 'Managing Principal & Superadmin Broker',
+    date: getFormattedDate(-1),
+    clockIn: getIsoTime(getFormattedDate(-1), 8, 30),
+    clockOut: getIsoTime(getFormattedDate(-1), 18, 0),
+    breaks: [
+      {
+        id: 'brk-y1-1',
+        breakNumber: 1,
+        startTime: getIsoTime(getFormattedDate(-1), 13, 0),
+        endTime: getIsoTime(getFormattedDate(-1), 13, 45),
+        durationMinutes: 45,
+        note: 'Lunch Break'
+      },
+      {
+        id: 'brk-y1-2',
+        breakNumber: 2,
+        startTime: getIsoTime(getFormattedDate(-1), 16, 0),
+        endTime: getIsoTime(getFormattedDate(-1), 16, 20),
+        durationMinutes: 20,
+        note: 'Coffee Break'
+      }
+    ],
+    totalWorkMinutes: 570,
+    totalBreakMinutes: 65,
+    netWorkMinutes: 505,
+    status: 'present',
+    notes: 'Full day portfolio transactions & escrow signings.',
+    createdAt: getIsoTime(getFormattedDate(-1), 8, 30),
+    updatedAt: getIsoTime(getFormattedDate(-1), 18, 0)
+  },
+  {
+    id: 'att-yest-2',
+    userId: 'staff-2',
+    userName: 'Marcus Chen',
+    userEmail: 'marcus.chen@bightrealestate.com',
+    userRole: 'admin',
+    userAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
+    userTitle: 'Senior Luxury Portfolio Partner',
+    date: getFormattedDate(-1),
+    clockIn: getIsoTime(getFormattedDate(-1), 9, 0),
+    clockOut: getIsoTime(getFormattedDate(-1), 17, 30),
+    breaks: [
+      {
+        id: 'brk-y2-1',
+        breakNumber: 1,
+        startTime: getIsoTime(getFormattedDate(-1), 13, 0),
+        endTime: getIsoTime(getFormattedDate(-1), 13, 45),
+        durationMinutes: 45,
+        note: 'Lunch'
+      }
+    ],
+    totalWorkMinutes: 510,
+    totalBreakMinutes: 45,
+    netWorkMinutes: 465,
+    status: 'present',
+    notes: 'Closed DHA Phase 8 negotiation.',
+    createdAt: getIsoTime(getFormattedDate(-1), 9, 0),
+    updatedAt: getIsoTime(getFormattedDate(-1), 17, 30)
+  },
+  {
+    id: 'att-yest-3',
+    userId: 'staff-3',
+    userName: 'Sarah Jenkins',
+    userEmail: 'sarah.jenkins@bightrealestate.com',
+    userRole: 'admin',
+    userAvatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=400&q=80',
+    userTitle: 'Executive Residential Advisor',
+    date: getFormattedDate(-1),
+    clockIn: getIsoTime(getFormattedDate(-1), 8, 50),
+    clockOut: getIsoTime(getFormattedDate(-1), 17, 45),
+    breaks: [
+      {
+        id: 'brk-y3-1',
+        breakNumber: 1,
+        startTime: getIsoTime(getFormattedDate(-1), 12, 45),
+        endTime: getIsoTime(getFormattedDate(-1), 13, 30),
+        durationMinutes: 45,
+        note: 'Lunch'
+      },
+      {
+        id: 'brk-y3-2',
+        breakNumber: 2,
+        startTime: getIsoTime(getFormattedDate(-1), 15, 30),
+        endTime: getIsoTime(getFormattedDate(-1), 15, 45),
+        durationMinutes: 15,
+        note: 'Tea Break'
+      }
+    ],
+    totalWorkMinutes: 535,
+    totalBreakMinutes: 60,
+    netWorkMinutes: 475,
+    status: 'present',
+    notes: 'Escorted 3 private client viewings.',
+    createdAt: getIsoTime(getFormattedDate(-1), 8, 50),
+    updatedAt: getIsoTime(getFormattedDate(-1), 17, 45)
+  },
+  {
+    id: 'att-yest-4',
+    userId: 'staff-4',
+    userName: 'David Ross',
+    userEmail: 'david.ross@bightrealestate.com',
+    userRole: 'admin',
+    userAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80',
+    userTitle: 'Listing Coordinator & Commercial Specialist',
+    date: getFormattedDate(-1),
+    clockIn: getIsoTime(getFormattedDate(-1), 9, 0),
+    clockOut: getIsoTime(getFormattedDate(-1), 14, 0),
+    breaks: [
+      {
+        id: 'brk-y4-1',
+        breakNumber: 1,
+        startTime: getIsoTime(getFormattedDate(-1), 12, 0),
+        endTime: getIsoTime(getFormattedDate(-1), 12, 30),
+        durationMinutes: 30,
+        note: 'Break'
+      }
+    ],
+    totalWorkMinutes: 300,
+    totalBreakMinutes: 30,
+    netWorkMinutes: 270,
+    status: 'half_day',
+    notes: 'Approved half day for medical appointment.',
+    createdAt: getIsoTime(getFormattedDate(-1), 9, 0),
+    updatedAt: getIsoTime(getFormattedDate(-1), 14, 0)
+  }
+];
+
 

@@ -115,9 +115,48 @@ export interface AuditLog {
   userId: string;
   userName: string;
   userRole: 'superadmin' | 'admin';
-  actionType: 'property_created' | 'property_updated' | 'property_deleted' | 'status_changed' | 'staff_updated' | 'lead_updated' | 'system_settings';
+  actionType: 'property_created' | 'property_updated' | 'property_deleted' | 'status_changed' | 'staff_updated' | 'lead_updated' | 'system_settings' | 'attendance_updated' | 'attendance_created' | 'attendance_deleted';
   description: string;
   targetId?: string;
+}
+
+export interface AttendanceBreak {
+  id: string;
+  breakNumber: 1 | 2;
+  startTime: string; // ISO string
+  endTime?: string;  // ISO string
+  durationMinutes?: number;
+  note?: string;
+}
+
+export type AttendanceStatus = 'present' | 'late' | 'half_day' | 'absent' | 'on_leave';
+
+export interface AttendanceRecord {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  userRole: 'superadmin' | 'admin' | 'client';
+  userAvatar?: string;
+  userTitle?: string;
+  date: string; // 'YYYY-MM-DD'
+  clockIn?: string; // ISO string
+  clockOut?: string; // ISO string
+  breaks: AttendanceBreak[]; // Maximum 2 breaks allowed
+  totalWorkMinutes: number;
+  totalBreakMinutes: number;
+  netWorkMinutes: number;
+  status: AttendanceStatus;
+  notes?: string;
+  editedBy?: {
+    userId: string;
+    userName: string;
+    userRole: string;
+    timestamp: string;
+    reason?: string;
+  };
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface FilterState {

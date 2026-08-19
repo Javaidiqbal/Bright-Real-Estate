@@ -1,6 +1,6 @@
 {
   "name": "Bight Real Estate",
-  "description": "Premier real estate platform featuring PKR currency pricing, dedicated Client and Staff authentication, and full Superadmin governance keyed to ijavaid91@gmail.com.",
+  "description": "Premier real estate platform featuring PKR currency pricing, dedicated Client and Staff authentication, integrated self-service and administrative attendance & break tracking system, and full Superadmin governance keyed to ijavaid91@gmail.com.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
