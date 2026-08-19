@@ -12,7 +12,11 @@ import {
   Crown,
   KeyRound,
   CheckCircle2,
-  RefreshCw
+  RefreshCw,
+  Eye,
+  EyeOff,
+  Copy,
+  ShieldCheck
 } from 'lucide-react';
 
 export const AuthModal: React.FC = () => {
@@ -33,6 +37,11 @@ export const AuthModal: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   
+  // Password visibility
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   // Forgot Password flow states
   const [recoveryEmail, setRecoveryEmail] = useState('');
   const [recoveryCode, setRecoveryCode] = useState('');
@@ -51,11 +60,15 @@ export const AuthModal: React.FC = () => {
     setSuccessMessage(null);
     setCodeSent(false);
     setSentCodePreview(null);
+    setShowLoginPassword(false);
+    setShowNewPassword(false);
+    setShowConfirmPassword(false);
   }, [authModalTab, isAuthModalOpen]);
 
   if (!isAuthModalOpen) return null;
 
   const isSuperadminIdentifier = identifier.trim().toLowerCase() === SUPERADMIN_EMAIL.toLowerCase() || email.trim().toLowerCase() === SUPERADMIN_EMAIL.toLowerCase();
+  const isSuperadminRecovery = recoveryEmail.trim().toLowerCase() === SUPERADMIN_EMAIL.toLowerCase();
 
   const handleSendRecoveryCode = async () => {
     if (!recoveryEmail || !recoveryEmail.includes('@')) {
@@ -69,7 +82,8 @@ export const AuthModal: React.FC = () => {
       if (res.success) {
         setCodeSent(true);
         setSentCodePreview(res.code);
-        setSuccessMessage(`A 6-digit recovery code has been generated for ${recoveryEmail}.`);
+        setRecoveryCode(res.code); // Auto-populate for frictionless verification
+        setSuccessMessage(`A 6-digit recovery code has been generated and sent to ${recoveryEmail}.`);
       } else {
         setError(res.error || 'Failed to dispatch recovery code.');
       }
@@ -104,10 +118,10 @@ export const AuthModal: React.FC = () => {
     try {
       const res = await forgotPasswordReset(recoveryEmail, recoveryCode, newPassword);
       if (res.success) {
-        setSuccessMessage('Password updated successfully! Signing you in...');
+        setSuccessMessage('Password reset successfully! Logging you into your account...');
         setTimeout(async () => {
           await login(recoveryEmail, newPassword);
-        }, 1000);
+        }, 800);
       } else {
         setError(res.error || 'Failed to reset password.');
       }
@@ -228,16 +242,26 @@ export const AuthModal: React.FC = () => {
           )}
 
           {successMessage && (
-            <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-start gap-2.5">
-              <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600" />
-              <div>
-                <span>{successMessage}</span>
-                {sentCodePreview && (
-                  <div className="mt-1 font-mono font-bold text-slate-900 bg-emerald-100/70 px-2 py-1 rounded inline-block">
-                    Authorization Code: {sentCodePreview}
-                  </div>
-                )}
+            <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs space-y-2">
+              <div className="flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600" />
+                <span className="font-medium">{successMessage}</span>
               </div>
+              {sentCodePreview && (
+                <div className="flex items-center justify-between bg-white/90 border border-emerald-300 px-3 py-2 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-slate-500">Authorization Code:</span>
+                    <span className="font-mono font-bold text-sm tracking-widest text-slate-900">{sentCodePreview}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setRecoveryCode(sentCodePreview)}
+                    className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 underline cursor-pointer"
+                  >
+                    Use Code
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -255,11 +279,27 @@ export const AuthModal: React.FC = () => {
                     required
                     value={recoveryEmail}
                     onChange={(e) => setRecoveryEmail(e.target.value)}
-                    placeholder="e.g. your.email@domain.com"
+                    placeholder="e.g. ijavaid91@gmail.com, staff or client email"
                     className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
                   />
                 </div>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Password recovery via email is available for all registered clients, staff brokers, and superadmin.
+                </p>
               </div>
+
+              {/* Superadmin Recovery Recognition */}
+              {isSuperadminRecovery && (
+                <div className="p-3 rounded-xl bg-purple-50 border border-purple-200 text-purple-900 text-xs flex items-center gap-2.5 animate-in fade-in">
+                  <Crown className="w-4 h-4 text-purple-600 shrink-0" />
+                  <div>
+                    <span className="font-bold block">Superadmin Recovery</span>
+                    <span className="text-[11px] text-purple-700">
+                      Generating authorized code for {SUPERADMIN_EMAIL}.
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {!codeSent ? (
                 <button
@@ -307,13 +347,20 @@ export const AuthModal: React.FC = () => {
                     <div className="relative">
                       <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                       <input
-                        type="password"
+                        type={showNewPassword ? 'text' : 'password'}
                         required
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                        className="w-full pl-10 pr-10 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                      >
+                        {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
                     </div>
                   </div>
 
@@ -324,14 +371,29 @@ export const AuthModal: React.FC = () => {
                     <div className="relative">
                       <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                       <input
-                        type="password"
+                        type={showConfirmPassword ? 'text' : 'password'}
                         required
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                        className="w-full pl-10 pr-10 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
                     </div>
+                    {confirmPassword && newPassword !== confirmPassword && (
+                      <p className="text-[11px] text-rose-500 mt-1">Passwords do not match.</p>
+                    )}
+                    {confirmPassword && newPassword === confirmPassword && (
+                      <p className="text-[11px] text-emerald-600 mt-1 flex items-center gap-1 font-medium">
+                        <CheckCircle2 className="w-3 h-3" /> Passwords match.
+                      </p>
+                    )}
                   </div>
 
                   <button
@@ -462,13 +524,20 @@ export const AuthModal: React.FC = () => {
                 <div className="relative">
                   <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
-                    type="password"
+                    type={showLoginPassword ? 'text' : 'password'}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                    className="w-full pl-10 pr-10 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowLoginPassword(!showLoginPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 

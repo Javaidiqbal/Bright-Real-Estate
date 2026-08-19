@@ -25,13 +25,19 @@ export const AccountSettingsModal: React.FC = () => {
     closeAccountSettings, 
     accountSettingsInitialTab,
     changePassword,
-    updateUserProfile
+    updateUserProfile,
+    sendEmailAuthorizationCode,
+    forgotPasswordReset
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'password' | 'profile'>('password');
   
   // Password State
+  const [passwordMode, setPasswordMode] = useState<'current_pw' | 'email_code'>('current_pw');
   const [currentPassword, setCurrentPassword] = useState('');
+  const [recoveryCode, setRecoveryCode] = useState('');
+  const [codeSent, setCodeSent] = useState(false);
+  const [sentCodePreview, setSentCodePreview] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showCurrentPw, setShowCurrentPw] = useState(false);
@@ -52,7 +58,11 @@ export const AccountSettingsModal: React.FC = () => {
   useEffect(() => {
     if (isAccountSettingsOpen) {
       setActiveTab(accountSettingsInitialTab || 'password');
+      setPasswordMode('current_pw');
       setCurrentPassword('');
+      setRecoveryCode('');
+      setCodeSent(false);
+      setSentCodePreview(null);
       setNewPassword('');
       setConfirmPassword('');
       setPwError(null);
@@ -71,6 +81,27 @@ export const AccountSettingsModal: React.FC = () => {
   if (!isAccountSettingsOpen || !currentUser) return null;
 
   const isSuperadmin = currentUser.role === 'superadmin' || currentUser.email.toLowerCase() === SUPERADMIN_EMAIL.toLowerCase();
+
+  // Send Recovery Code for Password Change
+  const handleSendSettingsRecoveryCode = async () => {
+    setPwError(null);
+    setIsPwLoading(true);
+    try {
+      const res = await sendEmailAuthorizationCode(currentUser.email, 'password_recovery');
+      if (res.success) {
+        setCodeSent(true);
+        setSentCodePreview(res.code);
+        setRecoveryCode(res.code);
+        setPwSuccess(`A 6-digit authorization code has been sent to ${currentUser.email}.`);
+      } else {
+        setPwError(res.error || 'Failed to dispatch authorization code.');
+      }
+    } catch (err: any) {
+      setPwError(err?.message || 'Failed to send recovery code.');
+    } finally {
+      setIsPwLoading(false);
+    }
+  };
 
   // Password submission handler
   const handlePasswordSubmit = async (e: React.FormEvent) => {
@@ -95,14 +126,32 @@ export const AccountSettingsModal: React.FC = () => {
 
     setIsPwLoading(true);
     try {
-      const res = await changePassword(currentPassword, newPassword);
-      if (res.success) {
-        setPwSuccess('Password updated successfully! Your account credentials are secured.');
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
+      if (passwordMode === 'email_code') {
+        if (!recoveryCode || recoveryCode.length < 6) {
+          setPwError('Please enter the 6-digit authorization code.');
+          setIsPwLoading(false);
+          return;
+        }
+        const res = await forgotPasswordReset(currentUser.email, recoveryCode, newPassword);
+        if (res.success) {
+          setPwSuccess('Password reset successfully via verified email code!');
+          setNewPassword('');
+          setConfirmPassword('');
+          setRecoveryCode('');
+          setCodeSent(false);
+        } else {
+          setPwError(res.error || 'Failed to update password.');
+        }
       } else {
-        setPwError(res.error || 'Failed to update password.');
+        const res = await changePassword(currentPassword, newPassword);
+        if (res.success) {
+          setPwSuccess('Password updated successfully! Your account credentials are secured.');
+          setCurrentPassword('');
+          setNewPassword('');
+          setConfirmPassword('');
+        } else {
+          setPwError(res.error || 'Failed to update password.');
+        }
       }
     } catch (err: any) {
       setPwError(err?.message || 'An unexpected error occurred while changing password.');
@@ -244,39 +293,151 @@ export const AccountSettingsModal: React.FC = () => {
               )}
 
               {pwSuccess && (
-                <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-start gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span>{pwSuccess}</span>
+                <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs space-y-2">
+                  <div className="flex items-start gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span className="font-medium">{pwSuccess}</span>
+                  </div>
+                  {sentCodePreview && (
+                    <div className="flex items-center justify-between bg-white/90 border border-emerald-300 px-3 py-2 rounded-xl">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-slate-500">Authorization Code:</span>
+                        <span className="font-mono font-bold text-sm tracking-widest text-slate-900">{sentCodePreview}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setRecoveryCode(sentCodePreview)}
+                        className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 underline cursor-pointer"
+                      >
+                        Use Code
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
-              <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                {/* Current Password Field */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+              {/* Password Verification Mode Selector */}
+              <div className="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                <span className="text-slate-600 font-medium">Verification Method:</span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => { setPasswordMode('current_pw'); setPwError(null); setPwSuccess(null); }}
+                    className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                      passwordMode === 'current_pw'
+                        ? 'bg-slate-900 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                    }`}
+                  >
                     Current Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type={showCurrentPw ? 'text' : 'password'}
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      placeholder="Enter your current password"
-                      className="w-full pl-10 pr-10 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowCurrentPw(!showCurrentPw)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
-                    >
-                      {showCurrentPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    Required to authenticate password changes.
-                  </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setPasswordMode('email_code'); setPwError(null); setPwSuccess(null); }}
+                    className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                      passwordMode === 'email_code'
+                        ? 'bg-amber-500 text-slate-950 shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                    }`}
+                  >
+                    Email Code
+                  </button>
                 </div>
+              </div>
+
+              <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                {passwordMode === 'current_pw' ? (
+                  /* Current Password Field */
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-semibold text-slate-700">
+                        Current Password *
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPasswordMode('email_code');
+                          handleSendSettingsRecoveryCode();
+                        }}
+                        className="text-[11px] text-amber-700 hover:text-amber-800 font-semibold cursor-pointer"
+                      >
+                        Forgot Password?
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type={showCurrentPw ? 'text' : 'password'}
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        placeholder="Enter your current password"
+                        className="w-full pl-10 pr-10 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowCurrentPw(!showCurrentPw)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                      >
+                        {showCurrentPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Required to authenticate password changes.
+                    </p>
+                  </div>
+                ) : (
+                  /* Email Code Verification Mode */
+                  <div className="space-y-2">
+                    <div className="p-3 bg-amber-50/70 border border-amber-200/80 rounded-xl text-xs text-amber-900 space-y-1">
+                      <div className="font-semibold flex items-center gap-1.5">
+                        <Mail className="w-3.5 h-3.5 text-amber-700" />
+                        <span>Reset via Email Authorization:</span>
+                      </div>
+                      <p className="text-[11px] text-amber-800">
+                        Code will be dispatched to your registered email: <strong className="font-mono">{currentUser.email}</strong>
+                      </p>
+                    </div>
+
+                    {!codeSent ? (
+                      <button
+                        type="button"
+                        disabled={isPwLoading}
+                        onClick={handleSendSettingsRecoveryCode}
+                        className="w-full py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                      >
+                        <Mail className="w-3.5 h-3.5" />
+                        <span>Send 6-Digit Code to {currentUser.email}</span>
+                      </button>
+                    ) : (
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-semibold text-slate-700">
+                            6-Digit Authorization Code *
+                          </label>
+                          <button
+                            type="button"
+                            onClick={handleSendSettingsRecoveryCode}
+                            className="text-[11px] text-amber-700 hover:text-amber-800 font-semibold cursor-pointer"
+                          >
+                            Resend Code
+                          </button>
+                        </div>
+                        <div className="relative">
+                          <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            required
+                            maxLength={6}
+                            value={recoveryCode}
+                            onChange={(e) => setRecoveryCode(e.target.value.replace(/\D/g, ''))}
+                            placeholder="e.g. 582049"
+                            className="w-full pl-10 pr-4 py-2.5 text-xs font-mono tracking-widest bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* New Password Field */}
                 <div>

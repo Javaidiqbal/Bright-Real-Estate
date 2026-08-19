@@ -634,6 +634,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, code: '', error: 'Please enter a valid email address.' };
     }
 
+    // For password recovery, verify the email is registered
+    if (purpose === 'password_recovery') {
+      const isSuperadmin = cleanEmail === SUPERADMIN_EMAIL.toLowerCase();
+      const isStaff = staffList.some(s => s.email.toLowerCase() === cleanEmail);
+      const isCustomer = customerList.some(c => c.email.toLowerCase() === cleanEmail);
+      const hasPassword = Boolean(userPasswords[cleanEmail]);
+
+      if (!isSuperadmin && !isStaff && !isCustomer && !hasPassword) {
+        return { 
+          success: false, 
+          code: '', 
+          error: `No account registered with ${cleanEmail}. Please check your email spelling or create a new account.` 
+        };
+      }
+    }
+
     // Generate 6-digit numeric verification code
     const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes validity
